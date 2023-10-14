@@ -99,11 +99,29 @@ def _process_excel_export_mode(mode: str) -> str:
     elif "multiple" in mode:
         return "MULTIPLE_SHEETS"
     else:
-        raise GridbuilderError(
+        raise GridBuilderError(
             _make_error_msg("Excel export mode",
                             mode,
                             ["none", "manual", "file blob", "sheet blob", "trigger", "multiple"])
         )
+
+
+def _process_data_types(convert: bool, data: DataElement) -> List:
+    """ If conversion is requested, return the list of data element types. """
+    if not convert:
+        return []
+    if isinstance(data, pd.DataFrame):
+        return dict(zip(data.columns, (t.kind for t in data.dtypes)))
+    elif isinstance(data, pa.Table):
+        # FIXME: ensure this works. Could just use above
+        schema = data.schema
+        return dict(zip(data.column_names, (schema.field(c).type for c in data.column_names)))
+    elif isinstance(data, np.ndarray):
+        # FIXME: figure this one out
+        return []
+    else:
+        raise GridBuilderError(f"Cannot get data types of input data with type '{type(data)}'")
+        
 
 ######################################################################
 # Builder Class
@@ -119,6 +137,7 @@ class AgGridBuilder:
     license_key: str = None
     convert_to_original_types: bool = True
     errors: str = "coerce"
+    data_types: Union[List[str], Dict[str, List[str]]] = None
     reload_data: bool = False
     columns_state: List[Dict] = None
     theme: str = "streamlit"
@@ -160,6 +179,7 @@ class AgGridBuilder:
         obj.errors = _process_conversion_errors(convert_to_original_types, errors.lower())
         obj.theme = _process_theme(theme.lower())
         obj.excel_export_mode = _process_excel_export_mode(excel_export_mode.lower())
+        obj.data_types = _process_data_types(convert_to_original_types, data)
 
         # remaining items do not need cleaning
         obj.height = height
