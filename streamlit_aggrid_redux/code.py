@@ -41,4 +41,24 @@ class JsCode:
     def one_liner(self):
         """ Return the one-liner, mostly for verification. """
         return self.injected_code.replace("--x_x--0_0--", "")
-    
+
+
+def set_date_column(format: str = "YYYY-mm-dd") -> JsCode:
+    """ Set the field as a date column. """
+    # FIXME: I don't think this is right
+    return JsCode("""function(params) {
+    if (params) { return params.value.toString('YYYY-mm-dd'); }
+    }""")
+
+
+def set_number_column(is_comma_sep: bool = True) -> Jscode:
+    """ Set the field as a number, optionally as not comma separated. """
+    return JsCode("""(params) => {
+    if (params.value) {
+        if (is_comma_sep) {
+            return Math.floor(number).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
+        }
+        return Number(params.value);
+    }
+    return params.value;
+    }"""
