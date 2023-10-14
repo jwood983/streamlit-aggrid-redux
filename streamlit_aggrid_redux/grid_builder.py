@@ -16,6 +16,11 @@ DataElement = Union[pd.DataFrame, pa.Table, np.ndarray, str]
 ######################################################################
 # Converter functions
 ######################################################################
+def _make_error_msg(field: str, input: str, options: List[str]):
+    """ Helper function to make a cleaner error message. """
+    opts = ', '.join(map(lambda x: f"'{x}'", options))
+    return f"Input {field} '{input}' is invalid. Options are {opts}."
+    
 class NumpyArrayEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, numpy.ndarray):
@@ -47,7 +52,9 @@ def _process_auto_size_mode(mode: str) -> int:
     elif "fit" in mode:
         return 2 if "all" in mode else 1
     else:
-        raise GridBuilderError(f"Column Auto Size Mode input '{mode}' is not valid. Should be 'none', 'fit' or 'fit all'")
+        raise GridBuilderError(
+            _make_error_msg("Column Auto Size Mode", mode, ["none", "fit", "fit all"])
+        )
 
 
 def _process_return_mode(mode: str) -> int:
@@ -57,20 +64,26 @@ def _process_return_mode(mode: str) -> int:
     elif "filter" in mode:
         return 2 if "sort" in mode else 1
     else:
-        raise GridBuilderError(f"Return Mode input '{mode}' is not valid. Should be 'input', 'filter' or 'filter sort'")
+        raise GridBuilderError(
+            _make_error_msg("Return mode", mode, ["input", "filter", "filter sort"])
+        )
 
 
 def _process_conversions(convert: bool, errors: str) -> str:
     """ Ensure the conversion errors parameter, if requested, is correct. """
     if convert and errors not in ("raise", "coerce", "ignore"):
-        raise GridBuilderError(f"Conversion error handling input '{errors}' is not valid. Should be 'raise', 'coerce' or 'ignore'")
+        raise GridBuilderError(
+            _make_error_msg("Conversion error", errors, ["raise", "coerce", "ignore"])
+        )
     return errors
 
 
 def _process_theme(theme: str) -> str:
     """ Ensure the theme is correct. """
     if theme not in ("alpine", "balham", "streamlit", "excel"):
-        raise GridBuilderError(f"Theme input '{theme}' is not valid. Should be 'alpine', 'balham', 'streamlit', 'excel'")
+        raise GridBuilderError(
+            _make_error_msg("Theme", them, ["alpine", "balham", "streamlit", "excel"])
+        )
     return theme
 
 def _process_excel_export_mode(mode: str) -> str:
@@ -87,7 +100,9 @@ def _process_excel_export_mode(mode: str) -> str:
         return "MULTIPLE_SHEETS"
     else:
         raise GridbuilderError(
-            f"Excel export mode input '{mode}' is invald. Should be 'none', 'manual', 'file blob', 'sheet blob', 'trigger' or 'multiple'"
+            _make_error_msg("Excel export mode",
+                            mode,
+                            ["none", "manual", "file blob", "sheet blob", "trigger", "multiple"])
         )
 
 ######################################################################
@@ -96,8 +111,8 @@ def _process_excel_export_mode(mode: str) -> str:
 class AgGridBuilder:
     data: str = "{}"
     grid_options: Dict = None
-    shape: Tuple[int, int] = None
-    columns_auto_size_mode: int 0
+    height: int = None
+    columns_auto_size_mode: int = 0
     return_mode: int = 0
     allow_unsafe_js: bool = False
     enable_enterprise_modules: bool = True  # FIXME: maybe eliminate this, just need license key?
@@ -105,13 +120,13 @@ class AgGridBuilder:
     convert_to_original_types: bool = True
     errors: str = "coerce"
     reload_data: bool = False
-    columns_state: List[Dict]: None
+    columns_state: List[Dict] = None
     theme: str = "streamlit"
     custom_css: str = None
     update_on: List[str | Tuple[str, int]] = None
     enable_quick_search: bool = False
     excel_export_mode: str = "none"
-    excel_export_multiple_sheets: Dict: None
+    excel_export_multiple_sheets: Dict = None
 
     def __new__(cls,
                 data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
@@ -132,7 +147,7 @@ class AgGridBuilder:
                 update_on: List[str | Tuple[str, int]] = None,
                 enable_quick_search: bool = False,
                 excel_export_mode: str = "none",
-                excel_export_multiple_sheets: Dict: None,
+                excel_export_multiple_sheets: Dict = None,
                 **kwargs):
         """ Create a new immutable AgGridBuilder class object. """
         obj = super().__new__(cls)
@@ -147,7 +162,7 @@ class AgGridBuilder:
         obj.excel_export_mode = _process_excel_export_mode(excel_export_mode.lower())
 
         # remaining items do not need cleaning
-        obj.shape = (height, None)
+        obj.height = height
         obj.allow_unsafe_js = allow_unsafe_js
         obj.enable_enterprise_modules = enable_enterprise_modules
         obj.license_key = license_key
