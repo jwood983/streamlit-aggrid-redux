@@ -202,8 +202,8 @@ def ag_grid(
     # now call the component
     try:
         component_value = _component_func(
-            grid_options=grid.gridOptions,
-            row_data=grid.row_data,
+            grid_options=grid.grid_ptions,
+            row_data=grid.data,
             height=grid.height,
             columns_auto_size_mode=grid.columns_auto_size_mode, 
             return_mode=grid.return_mode, 
@@ -217,7 +217,7 @@ def ag_grid(
             custom_css=grid.custom_css,
             update_on=grid.update_on,
             manual_update=grid.manual_update,
-            enable_quicksearch=grid.enable_quicksearch,
+            enable_quick_search=grid.enable_quick_search,
             excel_export_mode=grid.excel_export_mode,
             excel_export_multiple_sheets=grid.excel_export_multiple_sheets,
             key=key
