@@ -177,6 +177,154 @@ class GridOptionsBuilder:
         self.grid_options["sideBar"] = side_bar
         return self
 
+    def add_grid_selection(self,
+                           selection_mode: str = "single",
+                           use_checkbox: bool = False,
+                           use_header_checkbox: bool = False,
+                           use_header_checkbox_filtered: bool = False,
+                           pre_selected_rows: List[int] = None,
+                           multi_select_with_click: bool = False,
+                           suppress_deselection: bool = False,
+                           suppress_click_selection: bool = False,
+                           group_selects_children: bool = True,
+                           group_selects_filtered: bool = True):
+        """Configure how AgGrid applies user selections.
+
+        Parameters
+        ----------
+        selection_mode: str, optional
+            Determines how selections are done. Either
+            "single", "multiple" or "disabled". Default
+            is "single".
+
+        use_checkbox: bool, optional
+            A flag to indicate whether we should have
+            a checkbox next to each row. Default is
+            False to disable the box.
+
+        use_header_checkbox: bool, optional
+            A flag to indicate whether we should have
+            a checkbox next to each header. Default
+            is False to diable the box.
+
+        use_header_checkbox_filtered: bool, optional
+            If `use_header_checkbox` is True, then this
+            parameters applies to the filtered result.
+            Default is False.
+
+        pre_selected_rows: List[int], optional
+            A list of rows to select on first load.
+            Default is None to not select any.
+
+        multi_select_with_click: bool, optional
+            A flag indicating whether users can select
+            multiple rows simply by clicking or if
+            Shift key must be used (False). Default is
+            False to force use of Shift key.
+
+        suppress_deselection: bool, optional
+            A flag indicating whether Ctrl key can suppress
+            deselecting all other rows. Defauls is False.
+
+        suppress_click_selection: bool, optional
+            A flag indicating that clicking should not
+            select a row. Default is False.
+
+        group_selects_children: bool, optional
+            A flag indicating that when the group is
+            selected, all the elements of the group
+            are selected. Default is True.
+
+        group_selects_filtered: boo, optional
+            A flag indicating that when the group is
+            selected, the filtered rows are also
+            selected. Default is True.
+
+        Returns
+        -------
+        GridOptionsBuilder
+           The updated object.
+        """
+        if selection_mode == "disabled":
+            self.grid_options.pop("rowSelection", None)
+            self.grid_options.pop("rowMultiSeletWithClick", None)
+            self.grid_options.pop("suppressRowDeselection", None)
+            self.grid_options.pop("suppresRowClickSelection", None)
+            self.grid_options.pop("groupSelectsChildren", None)
+            self.grid_options.pop("groupSelectsFiltered", None)
+            return self
+
+        # process the checkboxes
+        if use_checkbox:
+            suppress_click_selection = True
+            first_key = self.grid_options["columnDefs"].keys()[0]
+            self.grid_options["columnDefs"][first_key]["checkboxSelection"] = True
+            if use_header_checkbox:
+                self.grid_options["columnDefs"][first_key]["headerCheckboxSelection"] = True
+                if use_header_checkbox_filtered:
+                    self.grid_options["columnDefs"][first_key]["headerCheckboxSelectionFilteredOnly"] = True
+
+        # now maybe add pre-selected rows
+        if len(pre_selected_rows) > 0:
+            self.grid_options["preSelectedRows"] = pre_selected_rows
+
+        # add remaining options directly
+        self.grid_options.update(
+            dict(
+                rowSelection=selection_mode,
+                rowMultiSelectWithClick=multi_select_with_click,
+                suppressrowDeselection=suppress_deselection,
+                suppresRowClickSelection=suppress_click_selection,
+                groupSelectsChildren=group_selects_children,
+                groupSelectsFiltered=group_selects_filtered
+            )
+        )
+        return self
+
+    def add_pagination(self, auto_page_size: bool = True, page_size: int = 10) -> 'GridOptionsBuilder':
+        """Insert the pagination to reduce the size of
+        the grid on the page. By using this API,
+        pagination is automatically enabled.
+
+        Parameters
+        ----------
+        auto_page_size: bool, optional
+            A flag indicating that AgGrid should
+            automatically calculate optimal page
+            sizes. Default is True.
+
+        page_size: int, optional
+            If the previous is False, sets the maximum
+            number of rows on a page. Default is 10.
+
+        Returns
+        -------
+        GridOptionsBuilder
+            The updated object.
+        """
+        if auto_page_size:
+            self.grid_options.update(
+                dict(
+                    pagination=True,
+                    paginationAutoPageSize=True
+                )
+            )
+        else:
+            self.grid_options.update(
+                dict(
+                    pagination=True,
+                    paginationPageSize=page_size
+                )
+            )
+        return self
+
+    def remove_pagination(self) -> 'GridOptionsBuilder':
+        """Remove pagination from the builder."""
+        self.grid_options.pop("pagination", None)
+        self.grid_options.pop("paginationAutoPageSize", None)
+        self.grid_options.pop("paginationPageSize", None)
+        return self 
+
     def build(self) -> Dict:
         """After completing all the elements, call this
         to return the data dictionary.
