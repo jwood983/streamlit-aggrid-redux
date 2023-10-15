@@ -121,6 +121,62 @@ class GridOptionsBuilder:
         self.grid_options["columnDefs"][field] = defs
         return self
 
+    def add_sidebar(self, filters: bool = False, columns: bool = False) -> 'GridOptionsBuilder':
+        """Add filters and/or column details to the side bar.
+        Defaults are to ignore both, so this must be explicitly
+        marked.
+
+        Parameters
+        ----------
+        filters: bool, optional
+            A flag to add filters tool panel to the side
+            bar. Default is False to not add it.
+
+        columns: bool, optional
+            A flag to add selectable columns tool pane
+            to the side bar. Default is False to not
+            add it.
+
+        Returns
+        -------
+        GridOptionsBuilder
+            The updated object.
+        """
+        # get the side bar
+        side_bar = self.grid_options.get("sideBar", dict(toolPanels=[], defaultToolPanel=""))
+        
+        if filters:
+            panel =  dict(
+                id="filters",
+                labelDefault="Filters",
+                labelKey="filters",
+                iconKey="filter",
+                toolPanel="agFiltersToolPanel"
+            )
+
+            if len(side_bar["toolPanels"]) == 0:
+                side_bar["toolPanels"] = [panel]
+            else:
+                side_bar["toolPanels"].append(panel)
+                
+        # handle columns now (fall-through with if is intended)
+        if columns:
+            panel = dict(
+                id="columns",
+                labelDefault="Columns",
+                labelKey="columns",
+                iconKey="columns",
+                toolPanel="agColumnsToolPanel"
+            )
+            if len(side_bar["toolPanels"]) == 0:
+                side_bar["toolPanels"] = [panel]
+            else:
+                side_bar["toolPanels"].append(panel)
+
+        # save the side bar
+        self.grid_options["sideBar"] = side_bar
+        return self
+
     def build(self) -> Dict:
         """After completing all the elements, call this
         to return the data dictionary.
