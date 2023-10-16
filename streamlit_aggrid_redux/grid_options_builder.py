@@ -1,15 +1,36 @@
 """ This module helps users construct the necessary grid options parameters to pass to AgGrid. """
+import json
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 
-from typing import Dict, Union, Mapping
+from typing import Dict, Union, Mapping, List
 
 # local import
 from .errors import GridOptionsBuilderError
 
 
 DataElement = Union[np.ndarray, pd.DataFrame, pa.Table, str]
+
+
+def _pandas_types(d: str) -> List[str]:
+    """ Convert the column type to a list of AgGrid types. """
+    if d in ("i", "u", "f"):
+        # a numeric column (integer or float)
+        return ["numericColumn", "numberColumnFilter"]
+    elif d == "m":
+        return ["timedeltaFormat"]
+    elif d == "M":
+        ["dateColumnFilter", "shortDateTimeFormat"]
+    else:
+        # is either s text column or unknown data, treat as text
+        return ["textColumn"]
+
+
+def _pyarrow_types(d: str) -> List[str]:
+    """ Convert the Pyarrow column to a list of AgGrid Types. """
+    return []
+    
 
 
 class GridOptionsBuilder:
@@ -36,6 +57,51 @@ class GridOptionsBuilder:
             self.default_options.update(kwargs["defaultColDef"])
         else:
             self.default_options.update(kwargs)
+
+    @staticmethod
+    def from_data(self, data: DataElement):
+        """For people who like defaults and simple things,
+        this API allows users to pass in the data and
+        let this package fill the columns and set the
+        defaults.
+
+        Parameters
+        ----------
+        data: {np.ndarray, pd.DataFrame, pa.Table}
+            The data we're processing to set the grid
+            options.
+
+        Returns
+        -------
+        GridOptionsBuilder
+            The object with decent defaults.
+        """
+        # options with nothing passed
+        opt = GridOptionsBuilder(grid_options=dict())
+
+        # create the map
+        type_map = dict(
+            b=["textColumn"],
+            i=["numericColumn", "numberColumnFilter"],
+            u=["numericColumn", "numberColumnFilter"],
+            f=["numericColumn", "numberColumnFilter"],
+            m=["timedeltaFormat"],
+            M=["dateColumnFilter", "shortDateFormat"]
+        )
+        
+        if isinstance(data, pd.DataFrame):
+            for name, type in zip(data.columns, data.dtypes):
+                if "." in name:
+                    obj.grid_options["suppressFieldDotNotation"] = True
+                opt.add_column(name, type=type_map.get(type, []))
+        elif isinstance(data, pa.Table):
+            for name in data.column_names:
+                if "." in name:
+                    obj.grid_options["suppressFieldDotNotation"] = True
+                # FIXME get the type!
+                type = None
+                opt.add_column(name, type=type_map.get(type, []))
+            
 
     def add_column(self, field: str, header: str = None, **options: Mapping = None):
         """Add a new column to the configuration. Will throw
@@ -291,7 +357,8 @@ class GridOptionsBuilder:
         auto_page_size: bool, optional
             A flag indicating that AgGrid should
             automatically calculate optimal page
-            sizes. Default is True.
+            sizes. Default is True. This parameter
+            takes precedence over the page size.
 
         page_size: int, optional
             If the previous is False, sets the maximum
@@ -331,4 +398,8 @@ class GridOptionsBuilder:
         """
         self.grid_options["columnDefs"] = list(self.grid_options["columnDefs"].values())
         rerun self.grid_options
+
+    def __str__(self):
+        """ Print the grid options. """
+        return json.dumps(self.grid_options, indent=4)
         
