@@ -28,19 +28,22 @@ class NumpyArrayEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
         
         
-def _serialize_data(data: DataElemet) -> str:
+def _serialize_data(data: DataElemet) -> Dict:
     """ Convert the input data element into a JSON string. """
     if isinstance(data, pd.DataFrame):
-        return data.to_json(orient="records")
+        return data.to_dict(orient="records")
     elif isinstnace(data, pa.Table):
         # There ought to be a better way for serializing pyarrow tables
         return _serialize_data(data.to_pandas())
     elif isinstance(data, np.ndarray):
         # use json decoder
-        return json.dumps(data, cls=NumpyArrayEncoder)
+        return json.loads(json.dumps(data, cls=NumpyArrayEncoder))
     elif isinstance(data, str):
         # presume it's already JSON
-        return data
+        try:
+            return json.loads(data)
+        except json.decoder.JSONDecodeError:
+            raise GridBuilderError("Input string is not a valid JSON string.")
     else:
         raise GridBuilderError(f"Cannot serialize data of type '{type(data)}'")
 
@@ -88,6 +91,7 @@ def _process_theme(theme: str) -> str:
 
 def _process_excel_export_mode(mode: str) -> str:
     """ Ensure the excel export mode is set correctly. """
+    # FIXME: I think we only want none, manual & automatic.
     if mode == "none":
         return "NONE"
     elif mode == "manual":
@@ -110,6 +114,7 @@ def _process_data_types(convert: bool, data: DataElement) -> List:
     """ If conversion is requested, return the list of data element types. """
     if not convert:
         return []
+    
     if isinstance(data, pd.DataFrame):
         return dict(zip(data.columns, (t.kind for t in data.dtypes)))
     elif isinstance(data, pa.Table):
@@ -127,7 +132,7 @@ def _process_data_types(convert: bool, data: DataElement) -> List:
 # Builder Class
 ######################################################################
 class AgGridBuilder:
-    data: str = "{}"
+    data: Dict = dict()
     grid_options: Dict = None
     height: int = None
     columns_auto_size_mode: int = 0
