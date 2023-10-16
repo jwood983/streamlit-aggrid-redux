@@ -29,7 +29,14 @@ def _pandas_types(d: str) -> List[str]:
 
 def _pyarrow_types(d: str) -> List[str]:
     """ Convert the Pyarrow column to a list of AgGrid Types. """
-    return []
+    if "int" in d or "float" in d:
+        return ["numericColumn", "numberColumnFilter"]
+    if "date" in d or "time" in d:
+        return ["dateColumnFilter", "shortDateTimeFormat"]
+    if "duration" in d:
+        return ["timedeltaFormat"]
+    # treat all other inputs as text
+    return ["textColumn"]
     
 
 
@@ -59,7 +66,7 @@ class GridOptionsBuilder:
             self.default_options.update(kwargs)
 
     @staticmethod
-    def from_data(self, data: DataElement):
+    def from_data(self, data: DataElement) -> GridOptionsBuilder:
         """For people who like defaults and simple things,
         this API allows users to pass in the data and
         let this package fill the columns and set the
@@ -78,30 +85,27 @@ class GridOptionsBuilder:
         """
         # options with nothing passed
         opt = GridOptionsBuilder(grid_options=dict())
-
-        # create the map
-        type_map = dict(
-            b=["textColumn"],
-            i=["numericColumn", "numberColumnFilter"],
-            u=["numericColumn", "numberColumnFilter"],
-            f=["numericColumn", "numberColumnFilter"],
-            m=["timedeltaFormat"],
-            M=["dateColumnFilter", "shortDateFormat"]
-        )
         
+        # process the input data element
         if isinstance(data, pd.DataFrame):
             for name, type in zip(data.columns, data.dtypes):
                 if "." in name:
                     obj.grid_options["suppressFieldDotNotation"] = True
-                opt.add_column(name, type=type_map.get(type, []))
+                opt.add_column(name, type=_pandas_types(type))
         elif isinstance(data, pa.Table):
             for name in data.column_names:
                 if "." in name:
                     obj.grid_options["suppressFieldDotNotation"] = True
-                # FIXME get the type!
-                type = None
-                opt.add_column(name, type=type_map.get(type, []))
-            
+                # FIXME: does this work?
+                type = str(data.column(name).type)
+                opt.add_column(name, type=_pyarrow_types(type))
+        elif isinstance(data, np.ndarray):
+            # FIXME: does this work?
+            for k in data.shape[1]:
+                opt.add_column(f"col{k+1}", type=data.dtype)
+        else:
+            raise GridOptionsBuilderError("Cannot parse type '{type(data)}'")
+        return opt
 
     def add_column(self, field: str, header: str = None, **options: Mapping = None):
         """Add a new column to the configuration. Will throw
@@ -131,12 +135,10 @@ class GridOptionsBuilder:
             raise GridOptionsBuilderError(
                 f"Field '{field}' exists in options; use `update_column` instead."
             )
-        
-        if header is None:
-            header_name = field
-        else:
-            header_name = header
+
+        header_name = field if header is None else header
         defs = dict(headerName=header_name, field=field)
+
         if options is not None:
             defs.update(**options)
         else:
@@ -225,7 +227,7 @@ class GridOptionsBuilder:
             else:
                 side_bar["toolPanels"].append(panel)
                 
-        # handle columns now (fall-through with if is intended)
+        # handle columns now (fall-through of the `if` is intended)
         if columns:
             panel = dict(
                 id="columns",
@@ -322,13 +324,17 @@ class GridOptionsBuilder:
 
         # process the checkboxes
         if use_checkbox:
+            # ensure this is true when using checkboxes!
             suppress_click_selection = True
+            # we only need to parse the first key because it will apply to all
             first_key = self.grid_options["columnDefs"].keys()[0]
-            self.grid_options["columnDefs"][first_key]["checkboxSelection"] = True
-            if use_header_checkbox:
-                self.grid_options["columnDefs"][first_key]["headerCheckboxSelection"] = True
-                if use_header_checkbox_filtered:
-                    self.grid_options["columnDefs"][first_key]["headerCheckboxSelectionFilteredOnly"] = True
+            self.grid_options["columnDefs"][first_key].update(
+                dict(
+                    checkboxSelection=True,
+                    headerCheckboxSelection=use_header_checkbox,
+                    headerCheckboxSelectionFilteredOnly=use_header_checkbox_filtered
+                )
+            )
 
         # now maybe add pre-selected rows
         if len(pre_selected_rows) > 0:
@@ -386,7 +392,13 @@ class GridOptionsBuilder:
         return self
 
     def remove_pagination(self) -> 'GridOptionsBuilder':
-        """Remove pagination from the builder."""
+        """Remove pagination from the builder.
+
+        Returns
+        -------
+        GridOptionsBuilder
+            The updated object.
+        """
         self.grid_options.pop("pagination", None)
         self.grid_options.pop("paginationAutoPageSize", None)
         self.grid_options.pop("paginationPageSize", None)
@@ -395,8 +407,14 @@ class GridOptionsBuilder:
     def build(self) -> Dict:
         """After completing all the elements, call this
         to return the data dictionary.
+
+        Returns
+        -------
+        Dict
+            The grid options data dictionary.
         """
-        self.grid_options["columnDefs"] = list(self.grid_options["columnDefs"].values())
+        if not isinstance(self.grid_options["columnDefs"], list):
+            self.grid_options["columnDefs"] = list(self.grid_options["columnDefs"].values())
         rerun self.grid_options
 
     def __str__(self):
