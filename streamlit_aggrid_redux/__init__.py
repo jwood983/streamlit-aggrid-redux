@@ -8,10 +8,11 @@ from streamlit.components.v1.components import MarshallComponentException
 
 # local imports
 from .code import JsCode
-from .errors import AgGridBuilderError, AgGridOptionsBuilderError
+from .errors import GridBuilderError, GridOptionsBuilderError
 from .grid_return import AgGridReturn, generate_response
 from .grid_builder import AgGridBuilder, DataElement
 from .grid_options_builder import AgGridOptionsBuilder, walk_grid_options
+from .version import version, __version__
 
 # ensure these imports can be used in Python code importing this module
 __all__ = [
@@ -19,7 +20,8 @@ __all__ = [
     'AgGridBuilderError', 'AgGridOptionsBuilderError',
     'AgGridReturn',
     'AgGridBuilder', 'DataElement'
-    'AgGridOptionsBuilder'
+    'AgGridOptionsBuilder',
+    'version', '__version__'
 ]
 
 
@@ -35,28 +37,25 @@ else:
 
 
 # the main api
-def ag_grid(
-    data: DataElement,
-    grid_options: Dict = None,
-    height: int = None,
-    columns_auto_size_mode: str = "none",
-    return_mode: str = "input",
-    allow_unsafe_js: bool = False,
-    enable_enterprise_modules: bool = True,
-    license_key: str = None,
-    convert_to_original_types: bool = True,
-    errors: str = "coerce",
-    reload_data: bool = False,
-    columns_state: List[Dict] = None,
-    theme: str = "streamlit",
-    custom_css: str = None,
-    use_legacy_selected_rows: bool = False,
-    key: str = None,
-    update_on: List[str | Tuple[str, int]] = None,
-    enable_quick_search: bool = False,
-    excel_export_mode: str = "none",
-    excel_export_multiple_sheets: Dict = None,
-    **kwargs: Mapping) -> AgGridReturn:
+def ag_grid(data: DataElement,
+            grid_options: Union[Dict, GridOptionsBuilder] = None,
+            height: int = None,
+            columns_auto_size_mode: str = "none",
+            return_mode: str = "input",
+            allow_unsafe_js: bool = False,
+            enable_enterprise_modules: bool = True,
+            license_key: str = None,
+            convert_to_original_types: bool = True,
+            errors: str = "coerce",
+            reload_data: bool = False,
+            columns_state: List[Dict] = None,
+            theme: str = "streamlit",
+            custom_css: str = None,
+            key: str = None,
+            update_on: List[str | Tuple[str, int]] = None,
+            enable_quick_search: bool = False,
+            excel_export_mode: str = "none",
+            **kwargs: Mapping) -> AgGridReturn:
     """Render the input data element using JS AgGrid.
 
     Parameters
@@ -70,9 +69,14 @@ def ag_grid(
         See https://www.ag-grid.com/javascript-data-grid/grid-options/
         for details. Default is None to use AgGrid defaults.
 
+        There is the GridOptionsBuilder class to help users
+        fill out the dictionary with required parameters.
+        However, the preferred input type is the data
+        dictionary.
+
     height: int, optional
         The height of the grid, in pixels. Default is
-        None to let AgGrid decide height.
+        None to let AgGrid/Streamlit decide height.
         
     columns_auto_size_mode: str, optional
         A string flag to determine how AgGrid handles the width
@@ -93,9 +97,11 @@ def ag_grid(
         injected. Use at your own risk.
         
     enable_enterprise_modules: bool, optional
-        A flag indicating whether AgGrid Enterprise Modules are 
-        available (True) or not (False). Default is True, but
-        requires a license key.
+        A flag indicating whether AgGrid Enterprise Modules
+        should be loaded (True) or not (False). A license key
+        is required to remove the Trial Version watermark; using
+        the enterprise modules without the license should not be
+        for production systems. Default is True.
         
     license_key: str, optional
         The AgGrid Enterprise Module license key. Unused if
@@ -126,11 +132,6 @@ def ag_grid(
         A stringified dictionary of custom CSS commands to pass to
         AgGrid. Default is None.
         
-    use_legacy_selected_rows: bool, optional
-        A flag indicating how the return value from AgGrid is processed.
-        Default is False to use current method, which should be all use
-        cases.
-        
     key: str, optional
         The streamlit key to pass to the component function for cases
         when data is displayed twice to avoid singleton errors. Default
@@ -140,6 +141,10 @@ def ag_grid(
         A list of AgGrid update methods when a cell is modified. See
         https://www.ag-grid.com/javascript-data-grid/cell-editing/#editing-events
         for details. Default is None.
+
+        Useful update modes include, `cellValueChanged`, `selectionChanged`,
+        `filterChanged`, `sortChanged`, `columnResized`, `columnMoved`,
+        `columnPinned` and `columnVisible
         
     enable_quick_search: bool, optional
         A flag indicating whether the quick search bar should appear
@@ -147,14 +152,10 @@ def ag_grid(
         
     excel_export_mode: str, optional
         A string flag indicating how Excel export should be handled. Options
-        are "none", "manual", "file blob", "sheet blob", "trigger" and
-        "multiple". Default is "none"; when exporting is desired, most use
-        cases should be "manual".
-        
-    excel_export_multiple_sheets: Dict[str, List[str]], optional
-        A dictionary indicating which sheets contains which columns. The
-        sheet names are the dictionary keys while the list of columns are
-        the values. Default is None
+        are "none" to disable downloading the grid as a file, "manual" to
+        insert a button to be clicked to force the download and "automatic"
+        which will download the grid on every reload. Default is "none";
+        when exporting is desired, most uses should be "manual".
 
     **kwargs: Mapping
         All remaining inputs are passed as key-value pairs to the grid options
@@ -185,12 +186,11 @@ def ag_grid(
             custom_css,
             update_on,
             enable_quick_search,
-            excel_export_mode,
-            excel_export_multiple_sheets
+            excel_export_mode
         )
-    except (AgGridBuilderError, AgGridOptionsBuilderError, Exception) as err:
+    except (GridBuilderError, GridOptionsBuilderError, Exception) as err:
         # rereaise errors
-        raise err
+        raise GridBuilderError(err)
 
     # if not in release mode, we hide a parameter "return_grid" that returns the grid
     if not _RELEASE and "return_mode" in kwargs and kwargs["return_mode"]:
@@ -219,7 +219,6 @@ def ag_grid(
             manual_update=grid.manual_update,
             enable_quick_search=grid.enable_quick_search,
             excel_export_mode=grid.excel_export_mode,
-            excel_export_multiple_sheets=grid.excel_export_multiple_sheets,
             key=key
         )
     except MarshallComponentException as err:
