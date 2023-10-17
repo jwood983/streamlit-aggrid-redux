@@ -7,7 +7,7 @@ import pyarrow as pa
 from typing import Any, List, Mapping, Union, Any, Dict, Tuple
 
 # local import
-from .errors import AgGridBuilderError, AgGridOptionsBuilderError
+from .errors import GridBuilderError, GridOptionsBuilderError
 from .grid_options_builder import GridOptionsBuilder, walk_grid_options
 
 DataElement = Union[pd.DataFrame, pa.Table, np.ndarray, str]
@@ -20,7 +20,8 @@ def _make_error_msg(field: str, input: str, options: List[str]):
     """ Helper function to make a cleaner error message. """
     opts = ', '.join(map(lambda x: f"'{x}'", options))
     return f"Input {field} '{input}' is invalid. Options are {opts}."
-    
+
+
 class NumpyArrayEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, numpy.ndarray):
@@ -28,19 +29,22 @@ class NumpyArrayEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
         
         
-def _serialize_data(data: DataElemet) -> str:
+def _serialize_data(data: DataElemet) -> Dict:
     """ Convert the input data element into a JSON string. """
     if isinstance(data, pd.DataFrame):
-        return data.to_json(orient="records")
+        return data.to_dict(orient="records")
     elif isinstnace(data, pa.Table):
         # There ought to be a better way for serializing pyarrow tables
-        return _serialize_data(data.to_pandas())
+        return data.to_pydict()
     elif isinstance(data, np.ndarray):
         # use json decoder
         return json.dumps(data, cls=NumpyArrayEncoder)
     elif isinstance(data, str):
         # presume it's already JSON
-        return data
+        try:
+            return json.loads(data)
+        except json.decoder.JSONDecodeError:
+            raise GridBuilderError("Cannot convert input data from string to JSON dictionary")
     else:
         raise GridBuilderError(f"Cannot serialize data of type '{type(data)}'")
 
@@ -80,11 +84,12 @@ def _process_conversions(convert: bool, errors: str) -> str:
 
 def _process_theme(theme: str) -> str:
     """ Ensure the theme is correct. """
-    if theme not in ("alpine", "balham", "streamlit", "excel"):
+    if theme not in ("alpine", "balham", "material",  "streamlit", "excel", "astro"):
         raise GridBuilderError(
-            _make_error_msg("Theme", them, ["alpine", "balham", "streamlit", "excel"])
+            _make_error_msg("Theme", theme, ["alpine", "balham", "material", "streamlit", "excel", "astro"])
         )
     return theme
+
 
 def _process_excel_export_mode(mode: str) -> str:
     """ Ensure the excel export mode is set correctly. """
@@ -92,17 +97,11 @@ def _process_excel_export_mode(mode: str) -> str:
         return "NONE"
     elif mode == "manual":
         return "MANUAL"
-    elif "blob" in mode:
-        return "FILE_BLOB_IN_GRID_RESPONSE" if "file" in mode else "SHEET_BLOB_IN_GRID_RESPONSE"
-    elif "trigger" in mode:
-        return "TRIGGER_DOWNLOAD"
-    elif "multiple" in mode:
-        return "MULTIPLE_SHEETS"
+    elif mode == "automatic":
+        return "TRIGGER"
     else:
         raise GridBuilderError(
-            _make_error_msg("Excel export mode",
-                            mode,
-                            ["none", "manual", "file blob", "sheet blob", "trigger", "multiple"])
+            _make_error_msg("Excel export mode", mode, ["none", "manual", "automatic"])
         )
 
 
@@ -133,19 +132,18 @@ class AgGridBuilder:
     columns_auto_size_mode: int = 0
     return_mode: int = 0
     allow_unsafe_js: bool = False
-    enable_enterprise_modules: bool = True  # FIXME: maybe eliminate this, just need license key?
+    enable_enterprise_modules: bool = True
     license_key: str = None
     convert_to_original_types: bool = True
     errors: str = "coerce"
-    data_types: Union[List[str], Dict[str, List[str]]] = None
+    dtypes: Union[List[str], Dict[str, List[str]]] = None
     reload_data: bool = False
     columns_state: List[Dict] = None
     theme: str = "streamlit"
     custom_css: str = None
-    update_on: List[str | Tuple[str, int]] = None
+    update_on: List[Union[str, Tuple[str, int]]] = None
     enable_quick_search: bool = False
     excel_export_mode: str = "none"
-    excel_export_multiple_sheets: Dict = None
 
     def __new__(cls,
                 data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
@@ -166,7 +164,6 @@ class AgGridBuilder:
                 update_on: List[str | Tuple[str, int]] = None,
                 enable_quick_search: bool = False,
                 excel_export_mode: str = "none",
-                excel_export_multiple_sheets: Dict = None,
                 **kwargs):
         """ Create a new immutable AgGridBuilder class object. """
         obj = super().__new__(cls)
@@ -179,7 +176,7 @@ class AgGridBuilder:
         obj.errors = _process_conversion_errors(convert_to_original_types, errors.lower())
         obj.theme = _process_theme(theme.lower())
         obj.excel_export_mode = _process_excel_export_mode(excel_export_mode.lower())
-        obj.data_types = _process_data_types(convert_to_original_types, data)
+        obj.dtypes = _process_data_types(convert_to_original_types, data)
 
         # remaining items do not need cleaning
         obj.height = height
@@ -189,13 +186,17 @@ class AgGridBuilder:
         obj.reload_data = reload_data
         obj.columns_state = column_state
         obj.custom_css = custom_css
-        obj.use_legacy_selected_rows = use_legacy_selected_rows
         obj.update_on = update_on
         obj.enable_quick_search = enable_quick_search
-        obj.excel_export_multiple_sheets = excel_export_multiple_sheets
 
         # handle the grid options now
-        obj.grid_options = GridOptionsBuilder(grid_options, data, custom_css, **kwargs)
+        if isinstance(grid_options, GridOptionsBuilder):
+            obj.grid_options = grid_options.build()
+        elif isinstance(grid_options, dict):
+            obj.grid_options = grid_options
+
+        # now update with the passed kwargs
+        obj.grid_options.update(**kwargs)
         
         return obj.process_deprecated(**kwargs)
 
