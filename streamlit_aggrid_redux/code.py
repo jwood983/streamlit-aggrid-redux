@@ -14,18 +14,26 @@ class JsCode:
         Parameters
         ----------
         code: str
-          The JavaScript code to inject into AgGrid
+          The JavaScript code to inject into AgGrid.
         """
         self.original_code = code
+
+        # this converts lambdas into full functions
+        lambda_pattern = f"[ \t]*\(([a-zA-Z, ]*)\)[ \t]*=>"
+        code_no_lambda = re.sub(re.compile(lambda_pattern), r"function(\1)", code)
         
         # this removes comments
         js_comments = r"\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$"
-        js_code = re.sub(re.compile(match_js_comment_expression, re.MULTILINE), r"\1", code)
-            
+        code_no_comment = re.sub(re.compile(match_js_comment_expression, re.MULTILINE),
+                                 r"\1",
+                                 code_no_lambda)
+
+        # this removes spaces between operators (e.g., 'a = b' -> 'a=b')
         match_js_spaces = r"\s+(?=(?:[^\'\"]*[\'\"][^\'\"]*[\'\"])*[^\'\"]*$)"
-        one_line_jscode = re.sub(match_js_spaces, " ", js_code, flags=re.MULTILINE)
-        
-        one_line_code = re.sub(r"\s+|\r\s*|\n+", " ", one_line_jscode, flags=re.MULTILINE)
+        code_no_spaces = re.sub(match_js_spaces, " ", code_no_comment, flags=re.MULTILINE)
+
+        # this converts it into a single line function
+        one_line_code = re.sub(r"\s+|\r\s*|\n+", " ", code_no_spaces, flags=re.MULTILINE)
         placeholder = "--x_x--0_0--"
         self.injected_code = f"{placeholder}{one_line_code}{placeholder}"
 
@@ -43,15 +51,15 @@ class JsCode:
         return self.injected_code.replace("--x_x--0_0--", "")
 
 
-def set_date_column(format: str = "YYYY-mm-dd") -> JsCode:
+def set_date_column() -> JsCode:
     """ Set the field as a date column. """
-    # FIXME: I don't think this is right
     return JsCode("""function(params) {
-    if (params) { return params.value.toString('YYYY-mm-dd'); }
+    if (params.value) { return params.value.toLocaleString('en-US').split('T')[0]; }
+    else { return params.value }}
     }""")
 
 
-def set_number_column(is_comma_sep: bool = True) -> Jscode:
+def set_number_column(is_comma_sep: bool = True) -> JsCode:
     """ Set the field as a number, optionally as not comma separated. """
     return JsCode("""(params) => {
     if (params.value) {
@@ -61,4 +69,12 @@ def set_number_column(is_comma_sep: bool = True) -> Jscode:
         return Number(params.value);
     }
     return params.value;
-    }"""
+    }""")
+
+                  
+def set_float(decimal_places: int = 2) -> JsCode:
+    """ Set the field as a number with decimal places. Useful
+    for small number, like 100. """
+    return JsCode(
+        f"""(params) => {{ return (params.value) ? params.value.toFixed({decimal_places}) : params.value; }}"""
+    )
