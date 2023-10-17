@@ -71,10 +71,10 @@ function addCustomCSS(customCss: CSSDict): void {
     document.head.appendChild(styleSheet)
 }
 
-function dateFormatter(isoString: string, formaterString: string): String {
+function dateFormatter(isoString: string, formatterString: string): String {
     try {
         let date = parseISO(isoString)
-        return format(date, formaterString)
+        return format(date, formatterString)
     }
     catch {
         return isoString
@@ -104,7 +104,7 @@ function numberFormatter(number: any, precision: number): String {
     }
 }
 
-const columnFormaters = {
+const columnFormatters = {
     columnTypes: {
         dateColumnFilter: {
             filter: "agDateColumnFilter",
@@ -212,11 +212,11 @@ function ManualDownloadButton(props: any) {
 class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     private api!: GridApi
     private columnApi!: ColumnApi
-    private columnFormaters: any
+    private columnFormatters: any
     private gridOptions: any
     private gridContainerRef: React.RefObject<HTMLDivElement>
     private isGridAutoHeightOn: boolean
-    private fitColumnsFirstTime: boolean = true
+    private notYetFitColumns: boolean = true
     private renderedGridHeightPrevious: number = 0
 
     constructor(props: any) {
@@ -254,6 +254,9 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             if ("license_key" in props.args) {
                 LicenseManager.setLicenseKey(props.args["license_key"])
             }
+	    else {
+	    	 console.log("Enterprise modules requested without license key; using trial version")
+	    }
         }
 
         this.isGridAutoHeightOn = 
@@ -265,12 +268,12 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     private parseGridoptions() {
         let gridOptions = Object.assign(
             {},
-            columnFormaters,
+            columnFormatters,
             this.props.args.grid_options
         )
         
         if (this.props.args.allow_unsafe_js) {
-            console.warn("flag allow_unsafe_js is on.")
+            console.warn("Flag allow_unsafe_js is on.")
             gridOptions = deepMap(gridOptions, parseJsCodeFromPython)
         }
         this.gridOptions = gridOptions
@@ -298,7 +301,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         }
     }
 
-    private DownloadAsExcelIfRequested() {
+    private downloadAsExcelIfRequested() {
         if (this.api) {
             if (this.props.args.excel_export_mode === "MULTIPLE_SHEETS" &&
                 this.props.args.excel_export_multiple_sheets
@@ -350,10 +353,11 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         if (renderedGridHeight && renderedGridHeight > 0 && renderedGridHeight != this.renderedGridHeightPrevious) {
             this.renderedGridHeightPrevious = renderedGridHeight
             Streamlit.setFrameHeight(renderedGridHeight)
-            // Run fitColumns only once when it first becomes visible with height > 0
+
+	    // Run fitColumns() only once when it first becomes visible with height > 0
             // This should solve auto_size_mode issues with st.tabs
-            if (this.fitColumnsFirstTime) {
-                this.fitColumnsFirstTime = false
+            if (this.notYetFitColumns) {
+                this.notYetFitColumns = false
                 this.fitColumns()
             }
         }
@@ -380,7 +384,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
 
     private async getGridReturnValue() {
         let returnData: any[] = []
-        let returnMode = this.props.args.data_return_mode
+        let returnMode = this.props.args.return_mode
         
         switch (returnMode) {
             case 0:
@@ -420,13 +424,11 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         let returnValue = {
             originalDtypes: this.props.args.frame_dtypes,
             rowData: returnData,
-            selectedRows: this.api.getSelectedRows(),
             selectedItems: this.api.getSelectedNodes().map((n, i) => ({
                 _selectedRowNodeInfo: { nodeRowIndex: n.rowIndex, nodeId: n.id },
                 ...n.data,
             })),
-            colState: this.columnApi.getColumnState(),
-            ExcelBlob: this.handleExcelExport(),
+            colState: this.columnApi.getColumnState()
         }
         // console.dir(returnValue)
         return returnValue
@@ -519,10 +521,10 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     }
 
     public render = (): ReactNode => {
-    let shouldRenderGridToolbar =
-        this.props.args.enable_quick_search === true ||
-        this.props.args.manual_update ||
-        this.props.args.excel_export_mode === "MANUAL"
+        let shouldRenderGridToolbar =
+            this.props.args.enable_quick_search === true ||
+            this.props.args.manual_update ||
+            this.props.args.excel_export_mode === "MANUAL"
     
         return (
             <div
