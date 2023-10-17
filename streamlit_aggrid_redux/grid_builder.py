@@ -131,7 +131,7 @@ def _process_data_types(convert: bool, data: DataElement) -> List:
 ######################################################################
 # Builder Class
 ######################################################################
-class AgGridBuilder:
+class GridBuilder:
     data: Dict = dict()
     grid_options: Dict = None
     height: int = None
@@ -174,6 +174,8 @@ class AgGridBuilder:
                 excel_export_multiple_sheets: Dict = None,
                 **kwargs):
         """ Create a new immutable AgGridBuilder class object. """
+        # NB: we don't document this class on purpose since it only massages
+        #     the inputs from the __init__ file.
         obj = super().__new__(cls)
 
         # process data that needs to be cleansed
@@ -204,6 +206,19 @@ class AgGridBuilder:
         
         return obj.process_deprecated(**kwargs)
 
-    def process_deprecated(self, **kwargs: Mapping):
-        """ In case we need to process deprecated parameters, handle them here. """
+    def process_deprecated(self, **kwargs: Mapping) -> 'GridBuilder':
+        """ In case we need to process deprecated parameters, handle them
+        here.
+
+        Parameters
+        ----------
+        kwargs: Mapping
+            A set of named arguments and value to try matching
+            to original version that have been since deprecated.
+
+        Returns
+        -------
+        GridBuilder
+            The updated object.
+        """
         return self
