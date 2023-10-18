@@ -250,6 +250,7 @@ class GridOptionsBuilder:
                            use_checkbox: bool = False,
                            use_header_checkbox: bool = False,
                            use_header_checkbox_filtered: bool = False,
+                           clear_checkbox_on_reload: bool = False,
                            pre_selected_rows: List[int] = None,
                            multi_select_with_click: bool = False,
                            suppress_deselection: bool = False,
@@ -279,6 +280,11 @@ class GridOptionsBuilder:
             If `use_header_checkbox` is True, then this
             parameters applies to the filtered result.
             Default is False.
+
+        clear_checkbox_on_reload: bool, optional
+            If using checkboxes, this option will allow
+            AgGrid to clear the selected cells on the
+            next grid reload. Default is False.
 
         pre_selected_rows: List[int], optional
             A list of rows to select on first load.
@@ -332,7 +338,8 @@ class GridOptionsBuilder:
                 dict(
                     checkboxSelection=True,
                     headerCheckboxSelection=use_header_checkbox,
-                    headerCheckboxSelectionFilteredOnly=use_header_checkbox_filtered
+                    headerCheckboxSelectionFilteredOnly=use_header_checkbox_filtered,
+                    clearCheckboxOnReload=clear_checkbox_on_reload
                 )
             )
 
