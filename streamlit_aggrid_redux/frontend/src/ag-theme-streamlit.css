@@ -7,7 +7,7 @@
   }
   /* Edit these to match streamlit! */
   .ag-theme-streamlit, .ag-theme-streamlit-dark {
-    --ag-streamlit-active-color: #2196f3;
+    --ag-streamlit-active-color: #ff4b4b;
     --ag-selected-row-background-color: rgba(33, 150, 243, 0.3);
     --ag-row-hover-color: rgba(33, 150, 243, 0.1);
     --ag-column-hover-color: rgba(33, 150, 243, 0.1);
@@ -17,12 +17,13 @@
     --ag-range-selection-background-color-3: rgba(33, 150, 243, 0.49);
     --ag-range-selection-background-color-4: rgba(33, 150, 243, 0.59);
     --ag-background-color: #fff;
-    --ag-foreground-color: #181d1f;
-    --ag-border-color: #babfc7;
+    --ag-foreground-color: #31333f;
+    --ag-border-color: #eaeaeb;
     --ag-secondary-border-color: #dde2eb;
+    --ag-header-foreground-color: #7f838a;
     --ag-header-background-color: #f8f8f8;
     --ag-tooltip-background-color: #f8f8f8;
-    --ag-odd-row-background-color: #fcfcfc;
+    --ag-odd-row-background-color: #fff;
     --ag-control-panel-background-color: #f8f8f8;
     --ag-subheader-background-color: #fff;
     --ag-invalid-color: #e02525;
@@ -42,7 +43,7 @@
     --ag-chip-background-color: rgba(24, 29, 31, 0.07);
     --ag-input-disabled-border-color: rgba(186, 191, 199, 0.3);
     --ag-input-disabled-background-color: rgba(186, 191, 199, 0.15);
-    --ag-borders: solid 1px;
+    --ag-borders: solid 0.5px;
     --ag-border-radius: 3px;
     --ag-borders-side-button: none;
     --ag-side-button-selected-background-color: transparent;
@@ -77,15 +78,17 @@
   }
   
   .ag-theme-streamlit-dark {
-    --ag-background-color: #181d1f;
+    --ag-streamlit-active-color: #ff4b4b;
+    --ag-background-color: #0d1116;
     --ag-foreground-color: #fff;
-    --ag-border-color: #68686e;
+    --ag-border-color: #303239;
     --ag-secondary-border-color: rgba(88, 86, 82, 0.5);
     --ag-modal-overlay-background-color: rgba(24, 29, 31, 0.66);
-    --ag-header-background-color: #222628;
-    --ag-tooltip-background-color: #222628;
-    --ag-odd-row-background-color: #222628;
-    --ag-control-panel-background-color: #222628;
+    --ag-header-background-color: #1d1c24;
+    --ag-header-foreground-color: #7f838a;
+    --ag-tooltip-background-color: #0d1116;
+    --ag-odd-row-background-color: #0d1116;
+    --ag-control-panel-background-color: #0d1116;
     --ag-subheader-background-color: #000;
     --ag-input-disabled-background-color: #282c2f;
     --ag-input-focus-box-shadow:
