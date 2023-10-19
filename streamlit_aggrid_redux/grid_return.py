@@ -12,18 +12,15 @@ class AgGridReturn(tuple):
     data: Union[pd.DataFrame, pa.Table, np.ndarray, str] = None
     selected_rows: List[Dict] = None
     column_state: List[Dict] = None
-    excel_blob: Dict = None
 
     def __new__(cls,
                 data: Union[pd.DataFrame, pa.Table, np.ndarray, str] = None,
                 selected_rows: List[Dict] = None,
-                column_state: List[Dict] = None,
-                excel_blob: Dict = None):
+                column_state: List[Dict] = None):
         obj = super().__new__(cls)
         obj.data = data
         obj.selected_rows = selected_rows
         obj.column_state = column_state
-        obj.excel_blob = excel_blob
 
 
 def _cast_to_time_delta(x: pd.Series, errors: str) -> Optional[pd.Timedelta]:
@@ -37,15 +34,17 @@ def _cast_to_time_delta(x: pd.Series, errors: str) -> Optional[pd.Timedelta]:
 def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
                       component_value: Any,
                       convert_to_original_types: bool,
-                      errors: str,
-                      use_legacy_selected_rows: bool):
+                      errors: str):
     """Generate the response according to the selected parameters and the 
     response from the component.
 
     Parameters
     ---------
     data: {pd.DataFrame, pa.Table, np.ndarray, str}
-        The original dataframe passed to the AgGrid builder
+        The original dataframe passed to the AgGrid builder.
+        If there is no data output from the AgGrid call,
+        this is returned to the user; it is ignored when
+        there is a return value.
 
     component_value: Any
         The response from the streamlit component.
@@ -57,11 +56,6 @@ def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
     errors: str
         A string indicating how errors should be handled
         in converting the columns.
-
-    use_legacy_selected_rows: bool
-        The flag indicating whether the selected rows are
-        using the legacy format (True) or the current format
-        (False). In most cases, the current is preferred.
 
     Returns
     -------
@@ -95,11 +89,15 @@ def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
         if len(date_cols) > 0:
             frame.loc[:, date_cols] = frame.loc[:, date_cols].apply(_cast_to_time_delta, errors=errors)
 
-    select_elem = "selectedRows" if use_legacy_selected_rows else "selectedItems"
+    # now if the input data is a Table or Numpy Array, convert to the original type
+    if isinstance(data, pa.Table):
+        frame = pa.Table.from_pandas(data)
+    elif isinstance(data, np.ndarray):
+        frame = frame.to_numpy()
+        
     return AgGridReturn(
-        data,
-        component_value[selected_elem],
-        component_value["colState"],
-        component_value["ExcelBlob"]
+        frame,
+        component_value["selectedItems"],
+        component_value["colState"]
     )   
     

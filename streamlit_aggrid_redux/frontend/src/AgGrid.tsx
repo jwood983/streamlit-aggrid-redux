@@ -265,7 +265,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         this.parseGridOptions()
     }
 
-    private parseGridoptions() {
+    private parseGridOptions() {
         let gridOptions = Object.assign(
             {},
             columnFormatters,
@@ -302,51 +302,16 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     }
 
     private downloadAsExcelIfRequested() {
-        if (this.api) {
-            if (this.props.args.excel_export_mode === "MULTIPLE_SHEETS" &&
-                this.props.args.excel_export_multiple_sheets
-            ) {
-                let params = this.props.args.excel_export_multiple_sheets
-                
-                let data = params.data.map((v: string) =>
-                    Buffer.from(decode(v)).toString("latin1")
-                )
-                params.data = data
-                
-                this.api.exportMultipleSheetsAsExcel(params)
-            }
-            if (this.props.args.excel_export_mode === "TRIGGER_DOWNLOAD") {
-                this.api.exportDataAsExcel()
-            }
+        if (this.api && this.props.args.excel_export_mode === "TRIGGER") {
+            this.api.exportDataAsExcel()
         }
     }
 
-    private handleExcelExport() {
-        if (this.props.args.excel_export_mode === "FILE_BLOB_IN_GRID_RESPONSE") {
-            let blob = this.api.getDataAsExcel() as Blob
-            let buffer;
-            (async () => {
-                await new Promise((resolve, reject) => {
-                    blob.arrayBuffer().then((v) => {
-                        buffer = encode(v)
-                        resolve(buffer)
-                    })
-                })
-            })()
-            return buffer
-        }
-
-        if (this.props.args.excel_export_mode === "SHEET_BLOB_IN_GRID_RESPONSE") {
-            let blob = this.api.getSheetDataForExcel({
-                sheetName: Math.round(Date.now() / 1000).toString(),
-            })
-            if (blob) {
-                return encode(Buffer.from(blob, 'latin1')) ///Buffer.from(blob).toString('base64')
-            }
-        }
-        
-        return null
-      }
+    private clearSelectedRows() {
+        if (this.api) {
+	    this.api.deselectAll()
+	}
+    }
 
     private resizeGridContainer() {
         const renderedGridHeight = this.gridContainerRef.current?.clientHeight
@@ -368,16 +333,17 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         
         switch (columns_auto_size_mode) {
             case 1:
-                case "FIT_ALL_COLUMNS_TO_VIEW":
+            case "FIT_ALL_COLUMNS_TO_VIEW":
                 this.api.sizeColumnsToFit()
                 break
             
             case 2:
-                case "FIT_CONTENTS":
+            case "FIT_CONTENTS":
                 this.columnApi.autoSizeAllColumns()
                 break
             
             default:
+	        // does nothing on purpose
                 break
         }
     }
@@ -422,7 +388,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         })
         
         let returnValue = {
-            originalDtypes: this.props.args.frame_dtypes,
             rowData: returnData,
             selectedItems: this.api.getSelectedNodes().map((n, i) => ({
                 _selectedRowNodeInfo: { nodeRowIndex: n.rowIndex, nodeId: n.id },
@@ -468,9 +433,8 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         const previous_export_mode = prevProps.args.excel_export_mode
         const current_export_mode = this.props.args.excel_export_mode
     
-        if (previous_export_mode !== current_export_mode &&
-            (current_export_mode === "TRIGGER_DOWNLOAD" || current_export_mode === "MULTIPLE_SHEETS")) {
-            this.DownloadAsExcelIfRequested()
+        if (previous_export_mode !== current_export_mode && current_export_mode === "TRIGGER") {
+            this.downloadAsExcelIfRequested()
         }
         
         if (this.props.args.reload_data && this.api) {
@@ -483,6 +447,11 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                 this.api.setPinnedBottomRowData(this.props.args.grid_options["pinnedBottomRowData"])
             }
         }
+
+        // maybe clear the selected rows
+	if (this.gridOptions.clearCheckboxOnReload) {
+	    this.clearSelectedRows()
+	}
     }
 
     private onGridReady(event: any) {

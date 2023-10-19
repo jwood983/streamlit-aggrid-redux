@@ -1,6 +1,9 @@
 """ This is the initial import function for using Streamlit AgGrid Redux. """
 import streamlit.components.v1 as components
 
+import os
+import warnings
+
 # common imports
 from typing import Union, List, Dict, Tuple, Mapping
 from decouple import config
@@ -9,18 +12,18 @@ from streamlit.components.v1.components import MarshallComponentException
 # local imports
 from .code import JsCode
 from .errors import GridBuilderError, GridOptionsBuilderError
-from .grid_return import AgGridReturn, generate_response
-from .grid_builder import AgGridBuilder, DataElement
-from .grid_options_builder import AgGridOptionsBuilder, walk_grid_options
+from .grid_return import GridReturn, generate_response
+from .grid_builder import GridBuilder, DataElement
+from .grid_options_builder import GridOptionsBuilder
 from .version import version, __version__
 
 # ensure these imports can be used in Python code importing this module
 __all__ = [
     'JsCode',
-    'AgGridBuilderError', 'AgGridOptionsBuilderError',
-    'AgGridReturn',
-    'AgGridBuilder', 'DataElement'
-    'AgGridOptionsBuilder',
+    'GridBuilderError', 'GridOptionsBuilderError',
+    'GridReturn',
+    'GridBuilder', 'DataElement'
+    'GridOptionsBuilder',
     'version', '__version__'
 ]
 
@@ -32,7 +35,7 @@ if not _RELEASE:
     _component_func = components.declare_component("agGrid", url="http://localhost:3001")
 else:
     parent_dir = os.path.dirname(os.path.abspath(__file__))
-    build_dir = os.path.join(parent_dir, "frontend","build")
+    build_dir = os.path.join(parent_dir, "frontend", "build")
     _component_func = components.declare_component("agGrid", path=build_dir)
 
 
@@ -63,7 +66,7 @@ def ag_grid(data: DataElement,
     data: {pd.DataFrame, pa.Table, np.ndarray, str}
         The data element to display.
 
-    grid_options: dict, optional
+    grid_options: {Dict, GridOptionsBuilder}, optional
         The optional set of parameters to pass to AgGrid
         that specify how the data is displayed on screen.
         See https://www.ag-grid.com/javascript-data-grid/grid-options/
@@ -169,7 +172,7 @@ def ag_grid(data: DataElement,
     """
     # first, use an internal class to massage the API inputs
     try:
-        grid = AgGridBuilder(
+        grid = GridBuilder(
             data,
             grid_options,
             height,
@@ -202,7 +205,7 @@ def ag_grid(data: DataElement,
     # now call the component
     try:
         component_value = _component_func(
-            grid_options=grid.grid_ptions,
+            grid_options=grid.grid_options,
             row_data=grid.data,
             height=grid.height,
             columns_auto_size_mode=grid.columns_auto_size_mode, 
