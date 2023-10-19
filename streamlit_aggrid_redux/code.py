@@ -19,12 +19,12 @@ class JsCode:
         self.original_code = code
 
         # this converts lambdas into full functions
-        lambda_pattern = f"[ \t]*\(([a-zA-Z, ]*)\)[ \t]*=>"
+        lambda_pattern = rf"[ \t]*\(([a-zA-Z, ]*)\)[ \t]*=>"
         code_no_lambda = re.sub(re.compile(lambda_pattern), r"function(\1)", code)
         
         # this removes comments
         js_comments = r"\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$"
-        code_no_comment = re.sub(re.compile(match_js_comment_expression, re.MULTILINE),
+        code_no_comment = re.sub(re.compile(js_comments, re.MULTILINE),
                                  r"\1",
                                  code_no_lambda)
 
@@ -51,25 +51,24 @@ class JsCode:
         return self.injected_code.replace("--x_x--0_0--", "")
 
 
-def set_date_column() -> JsCode:
+def set_date_column(locale: str = "en-US") -> JsCode:
     """ Set the field as a date column. """
-    return JsCode("""function(params) {
-    if (params.value) { return params.value.toLocaleString('en-US').split('T')[0]; }
-    else { return params.value }}
-    }""")
+    return JsCode(f"""function(params) {{
+    return (params.value) ? params.value.toLocaleString('{locale}').split('T')[0] : params.value; 
+    }}""")
 
 
 def set_number_column(is_comma_sep: bool = True) -> JsCode:
     """ Set the field as a number, optionally as not comma separated. """
-    return JsCode("""(params) => {
-    if (params.value) {
-        if (is_comma_sep) {
-            return Math.floor(number).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
-        }
+    return JsCode(f"""(params) => {{
+    if (params.value) {{
+        if ({is_comma_sep}) {{
+            return Math.floor(number).toString().replace(/(\d)(?=(\d{{3}})+(?!\d))/g, '$1,')
+        }}
         return Number(params.value);
-    }
+    }}
     return params.value;
-    }""")
+    }}""")
 
                   
 def set_float(decimal_places: int = 2) -> JsCode:
