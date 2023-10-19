@@ -4,13 +4,14 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
-from typing import Dict, Union, Mapping, List
+from typing import Dict, Union, Mapping, List, Callable
+from streamlit.type_util import convert_anything_to_df
 
 # local import
 from .errors import GridOptionsBuilderError
 
 
-DataElement = Union[np.ndarray, pd.DataFrame, pa.Table, str]
+DataElement = Union[np.ndarray, pd.DataFrame, pa.Table, dict, str]
 
 
 def _pandas_types(d: str) -> List[str]:
@@ -27,27 +28,18 @@ def _pandas_types(d: str) -> List[str]:
         return ["textColumn"]
 
 
-def _pyarrow_types(d: str) -> List[str]:
-    """ Convert the Pyarrow column to a list of AgGrid Types. """
-    if "int" in d or "float" in d:
-        return ["numericColumn", "numberColumnFilter"]
-    if "date" in d or "time" in d:
-        return ["dateColumnFilter", "shortDateTimeFormat"]
-    if "duration" in d:
-        return ["timedeltaFormat"]
-    # treat all other inputs as text
-    return ["textColumn"]
-    
-
-
 class GridOptionsBuilder:
     """This class helps users who are unfamiliar with JS and/or
     AgGrid build the necessary dictionary needed for AgGrid to
     produce better quality grids. It is preferred to pass the
     whole element as a data dictionary than to use this class
     """
-    def __init__(self, grid_options: Dict, **kwargs):
-        self.grid_options = grid_options
+    def __init__(self, grid_options: Dict = None, **kwargs):
+        if grid_options is not None:
+            self.grid_options = grid_options
+        else:
+            self.grid_options = dict()
+            
         # use 'update' method to update with the remaining kwargs
         self.grid_options.update(kwargs)
 
@@ -66,7 +58,7 @@ class GridOptionsBuilder:
             self.default_options.update(kwargs)
 
     @staticmethod
-    def from_data(self, data: DataElement) -> GridOptionsBuilder:
+    def from_data(data: DataElement) -> GridOptionsBuilder:
         """For people who like defaults and simple things,
         this API allows users to pass in the data and
         let this package fill the columns and set the
@@ -85,29 +77,17 @@ class GridOptionsBuilder:
         """
         # options with nothing passed
         opt = GridOptionsBuilder(grid_options=dict())
-        
-        # process the input data element
-        if isinstance(data, pd.DataFrame):
-            for name, type in zip(data.columns, data.dtypes):
-                if "." in name:
-                    obj.grid_options["suppressFieldDotNotation"] = True
-                opt.add_column(name, type=_pandas_types(type))
-        elif isinstance(data, pa.Table):
-            for name in data.column_names:
-                if "." in name:
-                    obj.grid_options["suppressFieldDotNotation"] = True
-                # FIXME: does this work?
-                type = str(data.column(name).type)
-                opt.add_column(name, type=_pyarrow_types(type))
-        elif isinstance(data, np.ndarray):
-            # FIXME: does this work?
-            for k in data.shape[1]:
-                opt.add_column(f"col{k+1}", type=data.dtype)
-        else:
-            raise GridOptionsBuilderError("Cannot parse type '{type(data)}'")
+
+        # convert the input to a frame to generate the options directly from pandas
+        frame = convert_anything_to_df(data, ensure_copy=True, allow_styler=False)
+        for name, type in zip(frame.columns, frame.dtypes):
+            if "." in name:
+                obj.grid_options["suppressFieldDotNotation"] = True
+            opt.add_column(name, name **{type: _pandas_types(type)})
+       
         return opt
 
-    def add_column(self, field: str, header: str = None, **options: Mapping = None):
+    def add_column(self, field: str, header: str = None, **options: Mapping = None) -> 'GridOptionsBuilder':
         """Add a new column to the configuration. Will throw
         and error if the field already exists in the options;
         to update, use `update_column()` method.
@@ -142,12 +122,12 @@ class GridOptionsBuilder:
         if options is not None:
             defs.update(**options)
         else:
-            defs.update(self.default_options)
+            defs.update(**self.default_options)
 
         self.grid_options["columnDefs"][field] = defs
         return self
 
-    def update_column(self, field: str, header: str = None, **options: Mapping = None):
+    def update_column(self, field: str, header: str = None, **options: Mapping = None) -> 'GridOptionsBuilder':
         """Update an existing column to the configuration. Will throw
         and error if the field does not exist in the options;
         to add, use `add_column()` method.
@@ -256,7 +236,7 @@ class GridOptionsBuilder:
                            suppress_deselection: bool = False,
                            suppress_click_selection: bool = False,
                            group_selects_children: bool = True,
-                           group_selects_filtered: bool = True):
+                           group_selects_filtered: bool = True) -> 'GridOptionsBuilder':
         """Configure how AgGrid applies user selections.
 
         Parameters
@@ -274,11 +254,11 @@ class GridOptionsBuilder:
         use_header_checkbox: bool, optional
             A flag to indicate whether we should have
             a checkbox next to each header. Default
-            is False to diable the box.
+            is False to disable the box.
 
         use_header_checkbox_filtered: bool, optional
             If `use_header_checkbox` is True, then this
-            parameters applies to the filtered result.
+            parameter applies to the filtered result.
             Default is False.
 
         clear_checkbox_on_reload: bool, optional
@@ -427,4 +407,28 @@ class GridOptionsBuilder:
     def __str__(self):
         """ Print the grid options. """
         return json.dumps(self.grid_options, indent=4)
-        
+
+
+def walk_grid_options(grid_opts: Dict, function: Callable):
+    """Apply the input function to the grid options dictionary.
+
+    Parameters
+    ----------
+    grid_opts: Dict
+        The grid options dictionary that needs to ensure we
+        have a valid JsCode Function applied to the setting.
+
+    function: Callable
+        A callable function that takes in a single agument
+        (usually a string) and returns a single argument (also
+        usually a string).
+    """
+    if isinstance(grid_opts, (Mapping, List)):
+        for _, k in enumerate(grid_opts):
+            if isinstance(grid_opts[k], Mapping):
+                walk_grid_options(grid_opts[k], function)
+            elif isinstance(grid_opts[k], List):
+                for elem in grid_opts[k]:
+                    walk_grid_options(elem, function)
+                else:
+                    grid_opts[k] = function(grid_opts[k])

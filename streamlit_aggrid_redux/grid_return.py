@@ -4,37 +4,38 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
-from typing import Union, Tuple, Any, Optional
+from typing import Union, Any, List, Dict, Literal
 
 
-class AgGridReturn(tuple):
+class GridReturn(tuple):
     """ Effectively this class is a named tuple. """
-    data: Union[pd.DataFrame, pa.Table, np.ndarray, str] = None
+    data: Union[pd.DataFrame, pa.Table, np.ndarray, dict, str] = None
     selected_rows: List[Dict] = None
     column_state: List[Dict] = None
 
     def __new__(cls,
-                data: Union[pd.DataFrame, pa.Table, np.ndarray, str] = None,
+                data: Union[pd.DataFrame, pa.Table, np.ndarray, dict, str] = None,
                 selected_rows: List[Dict] = None,
                 column_state: List[Dict] = None):
         obj = super().__new__(cls)
         obj.data = data
         obj.selected_rows = selected_rows
         obj.column_state = column_state
+        return obj
 
 
-def _cast_to_time_delta(x: pd.Series, errors: str) -> Optional[pd.Timedelta]:
+def _cast_to_time_delta(x: pd.Series) -> Optional[pd.Timedelta, pd.Series]:
     """ Try coercing the series to a Timedelta object. """
     try:
         return pd.Timedelta(x)
-    except (ValueError, ):
-        return s
+    except ValueError:
+        return x
 
 
 def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
                       component_value: Any,
                       convert_to_original_types: bool,
-                      errors: str):
+                      errors: Literal["raise", "ignore", "coerce"]) -> GridReturn:
     """Generate the response according to the selected parameters and the 
     response from the component.
 
@@ -53,47 +54,46 @@ def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
         The flag indicating if we should try converting the
         columns to their original types.
 
-    errors: str
+    errors: {"raise", "ignore", "coerce"}
         A string indicating how errors should be handled
         in converting the columns.
 
     Returns
     -------
-    AgGridReturn
+    GridReturn
         The returned namedtuple-like class that contains the
         responses from the AgGrid Component.
     """
     if not component_value:
-        return AgGridReturn(data)
+        return GridReturn(data)
 
     if isinstance(component_value, str):
         component_value = json.loads(component_value)
     
     frame = pd.DataFrame(component_value["rowData"])
-    original_types = component_value["originalDtypes"]
+    if len(frame) == 0:
+        return GridReturn(data)
 
-    if convert_to_original_types and not frame.empty:
-        numeric_cols = [k for k, v in original_types.items() if v in ("i", "u", "f")]
-        if len(numeric_cols) > 0:
-            frame.loc[:, numeric_cols] = frame.loc[:, numeric_cols].apply(pd.to_numeric, errors=errors)
-
-        text_cols = [k for k, v in original_types.items() if v in ("O", "S", "U")]
-        if len(text_cols) > 0:
-            frame.loc[:, text_cols] = frame.loc[:, text_cols].applymap(lambda x: np.nan if x is None else str(x))
-
-        date_cols = [k for k, v in original_types.items() if v == "M"]
-        if len(date_cols) > 0:
-            frame.loc[:, date_cols] = frame.loc[:, date_cols].apply(pd.to_datetime, errors=errors)
-
-        date_cols = [k for k, v in original_types.items() if v == "m"]
-        if len(date_cols) > 0:
-            frame.loc[:, date_cols] = frame.loc[:, date_cols].apply(_cast_to_time_delta, errors=errors)
-
-    # now if the input data is a Table or Numpy Array, convert to the original type
-    if isinstance(data, pa.Table):
-        frame = pa.Table.from_pandas(data)
+    # check types before converting
+    if isinstance(data, pd.DataFrame):
+        if convert_to_original_types:
+            frame = frame.astype(data.dtypes.to_dict(), errors=errors)
+    elif isinstance(data, pa.Table):
+        if convert_to_original_types:
+            frame = pa.Table.from_pandas(frame, data.schema)
+        else:
+            frame = pa.Table.from_pandas(frame)
     elif isinstance(data, np.ndarray):
-        frame = frame.to_numpy()
+        if convert_to_original_types:
+            frame = frame.to_numpy(dtype=data.dtype)
+        else:
+            frame = frame.to_numpy()
+    elif isinstance(data, dict):
+        # no data type coercion possible
+        frame = frame.to_dict()
+    elif isinstance(data, str):
+        # no data type coercion possible?
+        frame = frame.to_json()
         
     return AgGridReturn(
         frame,
