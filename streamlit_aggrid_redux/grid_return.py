@@ -24,7 +24,7 @@ class GridReturn(tuple):
         return obj
 
 
-def _cast_to_time_delta(x: pd.Series) -> Optional[pd.Timedelta, pd.Series]:
+def _cast_to_time_delta(x: pd.Series) -> Union[pd.Timedelta, pd.Series]:
     """ Try coercing the series to a Timedelta object. """
     try:
         return pd.Timedelta(x)
@@ -95,7 +95,7 @@ def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
         # no data type coercion possible?
         frame = frame.to_json()
         
-    return AgGridReturn(
+    return GridReturn(
         frame,
         component_value["selectedItems"],
         component_value["colState"]

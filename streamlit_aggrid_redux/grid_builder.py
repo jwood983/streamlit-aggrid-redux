@@ -6,6 +6,7 @@ import pyarrow as pa
 
 from typing import List, Mapping, Union, Dict, Tuple, Literal
 from streamlit.type_util import convert_anything_to_df
+from streamlit.errors import StreamlitAPIException
 
 # local import
 from .code import JsCode
@@ -22,13 +23,13 @@ def _make_error_msg(field: str, input: str, options: List[str]):
     """ Helper function to make a cleaner error message. """
     opts = ', '.join(map(lambda x: f"'{x}'", options))
     return f"Input {field} '{input}' is invalid. Options are {opts}."
-        
-        
-def _serialize_data(data: DataElemet) -> Dict:
+
+
+def _serialize_data(data: DataElement) -> Dict:
     """ Convert the input data element into a JSON string. """
     try:
         frame = convert_anything_to_df(data, ensure_copy=True, allow_styler=False)
-    except ValueError:
+    except (ValueError, StreamlitAPIException):
         # reraise error
         raise GridBuilderError(f"Cannot serialize data of type '{type(data)}'")
     return frame.to_dict()
@@ -60,19 +61,19 @@ def _process_return_mode(mode: str) -> int:
 
 def _process_conversions(convert: bool, errors: str) -> str:
     """ Ensure the conversion errors parameter, if requested, is correct. """
-    if convert and errors not in ("raise", "coerce", "ignore"):
+    error_opts = ("raise", "coerce", "ignore")
+    if convert and errors not in error_opts:
         raise GridBuilderError(
-            _make_error_msg("Conversion error", errors, ["raise", "coerce", "ignore"])
+            _make_error_msg("Conversion error", errors, error_opts)
         )
     return errors
 
 
 def _process_theme(theme: str) -> str:
     """ Ensure the theme is correct. """
-    if theme not in ("alpine", "balham", "material",  "streamlit", "excel", "astro"):
-        raise GridBuilderError(
-            _make_error_msg("Theme", theme, ["alpine", "balham", "material", "streamlit", "excel", "astro"])
-        )
+    theme_opts = ("alpine", "balham", "material", "streamlit", "excel", "astro")
+    if theme not in theme_opts:
+        raise GridBuilderError(_make_error_msg("Theme", theme, theme_opts))
     return theme
 
 
@@ -96,12 +97,12 @@ def _process_conversion_errors(convert: bool, errors: str) -> str:
             f"Error handling '{errors}' is invalid, should be 'raise', 'coerce' or 'ignore'"
         )
     return errors
-        
+
 
 ######################################################################
 # Builder Class
 ######################################################################
-class AgGridBuilder:
+class GridBuilder:
     data: Dict = dict()
     grid_options: Dict = None
     height: int = None
@@ -112,7 +113,6 @@ class AgGridBuilder:
     license_key: str = None
     convert_to_original_types: bool = True
     errors: Literal["raise", "ignore", "coerce"] = "coerce"
-    dtypes: Union[List[str], Dict[str, List[str]]] = None
     reload_data: bool = False
     columns_state: List[Dict] = None
     theme: str = "streamlit"
@@ -158,23 +158,35 @@ class AgGridBuilder:
         obj.license_key = license_key
         obj.convert_to_original_types = convert_to_original_types
         obj.reload_data = reload_data
-        obj.columns_state = column_state
+        obj.columns_state = columns_state
         obj.custom_css = custom_css
         obj.update_on = update_on
         obj.enable_quick_search = enable_quick_search
 
         # handle the grid options now
-        if isinstance(grid_options, GridOptionsBuilder):
+        if grid_options is None:
+            # if it is None, create default instance from data
+            obj.grid_options = GridOptionsBuilder.from_data(data).build()
+        elif isinstance(grid_options, GridOptionsBuilder):
+            # if it's from the Builder, built it
             obj.grid_options = grid_options.build()
         elif isinstance(grid_options, dict):
+            # otherwise we should save it
             obj.grid_options = grid_options
+        else:
+            raise GridBuilderError(
+                f"Unknown type for grid options: '{type(grid_options)}'"
+            )
 
-        # now update with the passed kwargs
-        obj.grid_options.update(**kwargs)
-        walk_grid_options(obj.grid_options, lambda v: v.code if isinstance(v, JsCode) else v)
-        
+        # now update with the embedded JS code
+        walk_grid_options(
+            obj.grid_options,
+            lambda v: v.code if isinstance(v, JsCode) else v
+        )
+
         return obj.process_deprecated(**kwargs)
 
     def process_deprecated(self, **kwargs: Mapping):
         """ In case we need to process deprecated parameters, handle them here. """
         return self
+

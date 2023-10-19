@@ -58,7 +58,7 @@ class GridOptionsBuilder:
             self.default_options.update(kwargs)
 
     @staticmethod
-    def from_data(data: DataElement) -> GridOptionsBuilder:
+    def from_data(data: DataElement) -> 'GridOptionsBuilder':
         """For people who like defaults and simple things,
         this API allows users to pass in the data and
         let this package fill the columns and set the
@@ -82,12 +82,12 @@ class GridOptionsBuilder:
         frame = convert_anything_to_df(data, ensure_copy=True, allow_styler=False)
         for name, type in zip(frame.columns, frame.dtypes):
             if "." in name:
-                obj.grid_options["suppressFieldDotNotation"] = True
+                opt.grid_options["suppressFieldDotNotation"] = True
             opt.add_column(name, name **{type: _pandas_types(type)})
        
         return opt
 
-    def add_column(self, field: str, header: str = None, **options: Mapping = None) -> 'GridOptionsBuilder':
+    def add_column(self, field: str, header: str = None, **options: Mapping) -> 'GridOptionsBuilder':
         """Add a new column to the configuration. Will throw
         and error if the field already exists in the options;
         to update, use `update_column()` method.
@@ -127,7 +127,7 @@ class GridOptionsBuilder:
         self.grid_options["columnDefs"][field] = defs
         return self
 
-    def update_column(self, field: str, header: str = None, **options: Mapping = None) -> 'GridOptionsBuilder':
+    def update_column(self, field: str, header: str = None, **options: Mapping) -> 'GridOptionsBuilder':
         """Update an existing column to the configuration. Will throw
         and error if the field does not exist in the options;
         to add, use `add_column()` method.
@@ -151,7 +151,7 @@ class GridOptionsBuilder:
         GridOptionsBuilder
             The updated object.
         """
-        if field in not self.grid_options["columnDefs"]:
+        if field not in self.grid_options["columnDefs"]:
             raise GridOptionsBuilderError(
                 f"Field '{field}' does not exist in options; use `add_column` instead."
             )
@@ -402,7 +402,7 @@ class GridOptionsBuilder:
         """
         if not isinstance(self.grid_options["columnDefs"], list):
             self.grid_options["columnDefs"] = list(self.grid_options["columnDefs"].values())
-        rerun self.grid_options
+        return self.grid_options
 
     def __str__(self):
         """ Print the grid options. """

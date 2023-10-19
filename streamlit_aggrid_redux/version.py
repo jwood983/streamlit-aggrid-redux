@@ -18,4 +18,4 @@ def version() -> str:
 
 def version_tuple() -> tuple:
     """ The package version number as a tuple. """
-    return __version__tuple
+    return __version_tuple__

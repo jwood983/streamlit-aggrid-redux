@@ -59,7 +59,7 @@ def ag_grid(data: DataElement,
             update_on: List[str | Tuple[str, int]] = None,
             enable_quick_search: bool = False,
             excel_export_mode: str = "none",
-            **kwargs: Mapping) -> AgGridReturn:
+            **kwargs: Mapping) -> GridReturn:
     """Render the input data element using JS AgGrid.
 
     Parameters
@@ -186,11 +186,12 @@ def ag_grid(data: DataElement,
             errors,
             reload_data,
             columns_state,
-            theme
+            theme,
             custom_css,
             update_on,
             enable_quick_search,
             excel_export_mode
+            **kwargs
         )
     except (GridBuilderError, GridOptionsBuilderError, Exception) as err:
         # re-raise all errors as GridBuilder errors
