@@ -1,18 +1,9 @@
-import {
-    Streamlit,
-    ComponentProps,
-    withStreamlitConnection,
-} from "streamlit-component-lib"
+import { Streamlit, ComponentProps, withStreamlitConnection, } from "streamlit-component-lib"
 
 import React, { ReactNode } from "react"
 import { AgGridReact } from "@ag-grid-community/react"
 
-import {
-    ModuleRegistry,
-    ColumnApi,
-    GridApi,
-    DetailGridInfo
-} from "@ag-grid-community/core"
+import { ModuleRegistry, ColumnApi, GridApi, DetailGridInfo } from "@ag-grid-community/core"
 import { CsvExportModule } from "@ag-grid-community/csv-export"
 import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model"
 import { LicenseManager } from "@ag-grid-enterprise/core"
@@ -40,9 +31,15 @@ import { duration } from "moment"
 
 import { debounce, throttle } from "lodash"
 
-import "./agGridStyle.scss"
+//import "./agGridStyle.scss"
+import "@ag-grid-community/styles/ag-grid.css";
+import "@ag-grid-community/styles/ag-theme-alpine.css";
+import "@ag-grid-community/styles/ag-theme-balham.css";
+import "@ag-grid-community/styles/ag-theme-material.css";
+import "./ag-theme-excel.css"
 
-import "@fontsource/source-sans-pro"
+import "@astrouxds/ag-grid-theme/dist/main.css";
+import "@fontsource/source-sans-pro";
 
 type CSSDict = { [key: string]: { [key: string]: string } }
 
