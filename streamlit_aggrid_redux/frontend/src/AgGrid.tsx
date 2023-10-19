@@ -40,9 +40,6 @@ import { duration } from "moment"
 
 import { debounce, throttle } from "lodash"
 
-import { encode, decode } from "base64-arraybuffer"
-import { Buffer } from "buffer"
-
 import "./agGridStyle.scss"
 
 import "@fontsource/source-sans-pro"
@@ -482,7 +479,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         else {
             if (this.gridOptions["preSelectedRows"] || this.gridOptions["preSelectedRows"]?.length() > 0) {
                 for (var idx in this.gridOptions["preSelectedRows"]) {
-                    this.api.getRowNode(this.gridOptions["preSelectedRows"][idx])?.setSelected(true, false, true)
+                    this.api.getRowNode(this.gridOptions["preSelectedRows"][idx])?.setSelected(true, false, 'selectableChanged')
                     this.returnGridValue()
                 }
             }
