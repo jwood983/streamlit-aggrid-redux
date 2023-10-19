@@ -11,11 +11,12 @@ from streamlit.components.v1.components import MarshallComponentException
 
 # local imports
 from .code import JsCode
+from .types import DataElement
 from .errors import GridBuilderError, GridOptionsBuilderError
-from .grid_return import GridReturn, generate_response
-from .grid_builder import GridBuilder, DataElement
-from .grid_options_builder import GridOptionsBuilder
 from .version import version, __version__
+from .grid_return import GridReturn, generate_response
+from .grid_builder import GridBuilder
+from .grid_options_builder import GridOptionsBuilder
 
 # ensure these imports can be used in Python code importing this module
 __all__ = [
@@ -29,14 +30,15 @@ __all__ = [
 
 
 _RELEASE = config("AGGRID_RELEASE", default=True, cast=bool)
+_PORT = config("PORT", default=3001, cast=int)
 
 if not _RELEASE:
     warnings.warn("WARNING: streamlit-aggrid-redux is in development mode.")
-    _component_func = components.declare_component("agGrid", url="http://localhost:3001")
+    _component_func = components.declare_component("agGridRedux", url=f"http://localhost:{_PORT}")
 else:
     parent_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(parent_dir, "frontend", "build")
-    _component_func = components.declare_component("agGrid", path=build_dir)
+    _component_func = components.declare_component("agGridRedux", path=build_dir)
 
 
 # the main api
@@ -58,7 +60,7 @@ def ag_grid(data: DataElement,
             update_on: List[str | Tuple[str, int]] = None,
             enable_quick_search: bool = False,
             excel_export_mode: str = "none",
-            **kwargs: Mapping) -> AgGridReturn:
+            **kwargs: Mapping) -> GridReturn:
     """Render the input data element using JS AgGrid.
 
     Parameters
@@ -80,17 +82,17 @@ def ag_grid(data: DataElement,
     height: int, optional
         The height of the grid, in pixels. Default is
         None to let AgGrid/Streamlit decide height.
-        
+
     columns_auto_size_mode: str, optional
         A string flag to determine how AgGrid handles the width
         of columns. Options are "none", "fit" and "fit all".
         Default is "none" to not auto-size the columns.
-        
+
     return_mode: str, optional
         A string flag that determines how the data is returned
         from AgGrid. Options are "input", "filter" and "filter sort".
         Default is "input".
-        
+
     allow_unsafe_js: bool, optional
         A flag indicating whether we want to inject JS into the
         grid options (e.g., for formatting numbers or dates). Default
@@ -98,48 +100,48 @@ def ag_grid(data: DataElement,
 
         WARNING: There are no protections or checks of the code
         injected. Use at your own risk.
-        
+
     enable_enterprise_modules: bool, optional
         A flag indicating whether AgGrid Enterprise Modules
         should be loaded (True) or not (False). A license key
         is required to remove the Trial Version watermark; using
         the enterprise modules without the license should not be
         for production systems. Default is True.
-        
+
     license_key: str, optional
         The AgGrid Enterprise Module license key. Unused if
         `enable_enterprise_modules=False`. Default is None.
-        
+
     convert_to_original_types: bool, optional
         A flag indicating whether the modified data output should
         coerced back to the original types. Default is True.
-        
+
     errors: str, optional
         A string flag to passed to Pandas data converters. Options
         are "coerce", "ignore" or "raise". Default is "coerce" which
         makes invalid cells NaN/NaT.
-        
+
     reload_data: bool, optional
         A flag indicating whether AgGrid should reload data when
-        refreshing. Default is False.
-        
+        refreshing. Default is
+
     columns_state: List[Dict], optional
-        A set of dictionaries of how the data should be displayed 
+        A set of dictionaries of how the data should be displayed
         in AgGrid. Default is None.
-        
+
     theme: str, optional
         The theme to apply to the AgGrid display. Options are "streamlit",
         "alpine", "balham" and "excel".
-        
+
     custom_css: str, optional
         A stringified dictionary of custom CSS commands to pass to
         AgGrid. Default is None.
-        
+
     key: str, optional
         The streamlit key to pass to the component function for cases
         when data is displayed twice to avoid singleton errors. Default
         is None.
-        
+
     update_on: List[str | Tuple[str, int]], optiona
         A list of AgGrid update methods when a cell is modified. See
         https://www.ag-grid.com/javascript-data-grid/cell-editing/#editing-events
@@ -148,11 +150,11 @@ def ag_grid(data: DataElement,
         Useful update modes include, `cellValueChanged`, `selectionChanged`,
         `filterChanged`, `sortChanged`, `columnResized`, `columnMoved`,
         `columnPinned` and `columnVisible
-        
+
     enable_quick_search: bool, optional
         A flag indicating whether the quick search bar should appear
         at the top of the grid (True) or not (False). Default is False.
-        
+
     excel_export_mode: str, optional
         A string flag indicating how Excel export should be handled. Options
         are "none" to disable downloading the grid as a file, "manual" to
@@ -167,7 +169,7 @@ def ag_grid(data: DataElement,
     Returns
     -------
     AgGridReturn
-        An immutable class that returns the output from the AgGrid (e.g., 
+        An immutable class that returns the output from the AgGrid (e.g.,
         after modifications, filtering, sorting).
     """
     # first, use an internal class to massage the API inputs
@@ -185,14 +187,15 @@ def ag_grid(data: DataElement,
             errors,
             reload_data,
             columns_state,
-            theme
+            theme,
             custom_css,
             update_on,
             enable_quick_search,
             excel_export_mode
+            **kwargs
         )
     except (GridBuilderError, GridOptionsBuilderError, Exception) as err:
-        # rereaise errors
+        # re-raise all errors as GridBuilder errors
         raise GridBuilderError(err)
 
     # if not in release mode, we hide a parameter "return_grid" that returns the grid
@@ -200,17 +203,16 @@ def ag_grid(data: DataElement,
         return grid
 
     # throw an error for now
-    raise NotImplementedError("Working on it")
-    
+    # raise NotImplementedError("Working on it")
+
     # now call the component
     try:
         component_value = _component_func(
             grid_options=grid.grid_options,
             row_data=grid.data,
             height=grid.height,
-            columns_auto_size_mode=grid.columns_auto_size_mode, 
-            return_mode=grid.return_mode, 
-            data_types=grid.data_types,
+            columns_auto_size_mode=grid.columns_auto_size_mode,
+            return_mode=grid.return_mode,
             allow_unsafe_js=grid.allow_unsafe_js,
             enable_enterprise_modules=grid.enable_enterprise_modules,
             license_key=grid.license_key,
@@ -219,19 +221,18 @@ def ag_grid(data: DataElement,
             theme=grid.theme,
             custom_css=grid.custom_css,
             update_on=grid.update_on,
-            manual_update=grid.manual_update,
             enable_quick_search=grid.enable_quick_search,
             excel_export_mode=grid.excel_export_mode,
             key=key
         )
     except MarshallComponentException as err:
-        # reraise this error but with JsCode note on it first, maybe.
+        # re-raise this error but with JsCode note on it first, maybe.
         args = list(err.args)
         if not grid.allow_unsafe_js:
             args[0] += ". If using custom JS Code, set allow_unsafe_js to True."
         # re-raise
         raise MarshallComponentException(*args)
-        
+
 
     # now generate the response
     return generate_response(component_value, data, grid.convert_to_original_types, grid.errors)

@@ -63,7 +63,7 @@ function getCSS(styles: CSSDict): string {
     return css.join("\n")
 }
 
-function addCustomCSS(customCss: CSSDict): void {
+function addCustomCss(customCss: CSSDict): void {
     var css = getCSS(customCss)
     var styleSheet = document.createElement("style")
     styleSheet.type = "text/css"
@@ -223,7 +223,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         super(props)
         // console.log("Grid INIT called", props)
 
-        this.gridContainerReg = React.createRef()
+        this.gridContainerRef = React.createRef()
 
         ModuleRegistry.register(ClientSideRowModelModule)
         ModuleRegistry.register(CsvExportModule)
@@ -254,9 +254,9 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             if ("license_key" in props.args) {
                 LicenseManager.setLicenseKey(props.args["license_key"])
             }
-	    else {
-	    	 console.log("Enterprise modules requested without license key; using trial version")
-	    }
+            else {
+                     console.log("Enterprise modules requested without license key; using trial version")
+            }
         }
 
         this.isGridAutoHeightOn = 
@@ -309,8 +309,8 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
 
     private clearSelectedRows() {
         if (this.api) {
-	    this.api.deselectAll()
-	}
+            this.api.deselectAll()
+        }
     }
 
     private resizeGridContainer() {
@@ -319,7 +319,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             this.renderedGridHeightPrevious = renderedGridHeight
             Streamlit.setFrameHeight(renderedGridHeight)
 
-	    // Run fitColumns() only once when it first becomes visible with height > 0
+            // Run fitColumns() only once when it first becomes visible with height > 0
             // This should solve auto_size_mode issues with st.tabs
             if (this.notYetFitColumns) {
                 this.notYetFitColumns = false
@@ -343,7 +343,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                 break
             
             default:
-	        // does nothing on purpose
+                // does nothing on purpose
                 break
         }
     }
@@ -449,9 +449,9 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         }
 
         // maybe clear the selected rows
-	if (this.gridOptions.clearCheckboxOnReload) {
-	    this.clearSelectedRows()
-	}
+        if (this.gridOptions.clearCheckboxOnReload) {
+            this.clearSelectedRows()
+        }
     }
 
     private onGridReady(event: any) {

@@ -4,13 +4,15 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 
-from typing import Any, List, Mapping, Union, Any, Dict, Tuple
+from typing import List, Mapping, Union, Dict, Tuple, Literal
+from streamlit.errors import StreamlitAPIException
+from streamlit.type_util import convert_anything_to_df
 
 # local import
-from .errors import GridBuilderError, GridOptionsBuilderError
+from .code import JsCode
+from .types import DataElement
+from .errors import GridBuilderError
 from .grid_options_builder import GridOptionsBuilder, walk_grid_options
-
-DataElement = Union[pd.DataFrame, pa.Table, np.ndarray, str]
 
 
 ######################################################################
@@ -22,31 +24,14 @@ def _make_error_msg(field: str, input: str, options: List[str]):
     return f"Input {field} '{input}' is invalid. Options are {opts}."
 
 
-class NumpyArrayEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, numpy.ndarray):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
-        
-        
-def _serialize_data(data: DataElemet) -> Dict:
+def _serialize_data(data: DataElement) -> Dict:
     """ Convert the input data element into a JSON string. """
-    if isinstance(data, pd.DataFrame):
-        return data.to_dict(orient="records")
-    elif isinstnace(data, pa.Table):
-        # There ought to be a better way for serializing pyarrow tables
-        return data.to_pydict()
-    elif isinstance(data, np.ndarray):
-        # use json decoder
-        return json.dumps(data, cls=NumpyArrayEncoder)
-    elif isinstance(data, str):
-        # presume it's already JSON
-        try:
-            return json.loads(data)
-        except json.decoder.JSONDecodeError:
-            raise GridBuilderError("Cannot convert input data from string to JSON dictionary")
-    else:
+    try:
+        frame = convert_anything_to_df(data, ensure_copy=True, allow_styler=False)
+    except (ValueError, StreamlitAPIException):
+        # reraise error
         raise GridBuilderError(f"Cannot serialize data of type '{type(data)}'")
+    return frame.to_dict()
 
 
 def _process_auto_size_mode(mode: str) -> int:
@@ -75,19 +60,19 @@ def _process_return_mode(mode: str) -> int:
 
 def _process_conversions(convert: bool, errors: str) -> str:
     """ Ensure the conversion errors parameter, if requested, is correct. """
-    if convert and errors not in ("raise", "coerce", "ignore"):
+    error_opts = ("raise", "coerce", "ignore")
+    if convert and errors not in error_opts:
         raise GridBuilderError(
-            _make_error_msg("Conversion error", errors, ["raise", "coerce", "ignore"])
+            _make_error_msg("Conversion error", errors, error_opts)
         )
     return errors
 
 
 def _process_theme(theme: str) -> str:
     """ Ensure the theme is correct. """
-    if theme not in ("alpine", "balham", "material",  "streamlit", "excel", "astro"):
-        raise GridBuilderError(
-            _make_error_msg("Theme", theme, ["alpine", "balham", "material", "streamlit", "excel", "astro"])
-        )
+    theme_opts = ("alpine", "balham", "material", "streamlit", "excel", "astro")
+    if theme not in theme_opts:
+        raise GridBuilderError(_make_error_msg("Theme", theme, theme_opts))
     return theme
 
 
@@ -105,28 +90,19 @@ def _process_excel_export_mode(mode: str) -> str:
         )
 
 
-def _process_data_types(convert: bool, data: DataElement) -> List:
-    """ If conversion is requested, return the list of data element types. """
-    if not convert:
-        return []
-    if isinstance(data, pd.DataFrame):
-        return dict(zip(data.columns, (t.kind for t in data.dtypes)))
-    elif isinstance(data, pa.Table):
-        # FIXME: ensure this works. Could just use above
-        schema = data.schema
-        return dict(zip(data.column_names, (schema.field(c).type for c in data.column_names)))
-    elif isinstance(data, np.ndarray):
-        # FIXME: figure this one out
-        return []
-    else:
-        raise GridBuilderError(f"Cannot get data types of input data with type '{type(data)}'")
-        
+def _process_conversion_errors(convert: bool, errors: str) -> str:
+    if convert and errors not in ("raise", "coerce", "ignore"):
+        raise GridBuilderError(
+            f"Error handling '{errors}' is invalid, should be 'raise', 'coerce' or 'ignore'"
+        )
+    return errors
+
 
 ######################################################################
 # Builder Class
 ######################################################################
-class AgGridBuilder:
-    data: str = "{}"
+class GridBuilder:
+    data: Dict = dict()
     grid_options: Dict = None
     height: int = None
     columns_auto_size_mode: int = 0
@@ -135,8 +111,7 @@ class AgGridBuilder:
     enable_enterprise_modules: bool = True
     license_key: str = None
     convert_to_original_types: bool = True
-    errors: str = "coerce"
-    dtypes: Union[List[str], Dict[str, List[str]]] = None
+    errors: Literal["raise", "ignore", "coerce"] = "coerce"
     reload_data: bool = False
     columns_state: List[Dict] = None
     theme: str = "streamlit"
@@ -146,8 +121,8 @@ class AgGridBuilder:
     excel_export_mode: str = "none"
 
     def __new__(cls,
-                data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
-                grid_options: Dict = None,
+                data: DataElement,
+                grid_options: Union[Dict, GridOptionsBuilder] = None,
                 height: int = None,
                 columns_auto_size_mode: str = "none",
                 return_mode: str = "input",
@@ -160,7 +135,6 @@ class AgGridBuilder:
                 columns_state: List[Dict] = None,
                 theme: str = "streamlit",
                 custom_css: str = None,
-                use_legacy_selected_rows: bool = False,
                 update_on: List[str | Tuple[str, int]] = None,
                 enable_quick_search: bool = False,
                 excel_export_mode: str = "none",
@@ -172,34 +146,46 @@ class AgGridBuilder:
         obj.data = _serialize_data(data)
         obj.columns_auto_size_mode = _process_auto_size_mode(columns_auto_size_mode.lower())
         obj.return_mode = _process_return_mode(return_mode.lower())
-        obj.convert_to_original_types = convert_to_original_types
         obj.errors = _process_conversion_errors(convert_to_original_types, errors.lower())
         obj.theme = _process_theme(theme.lower())
         obj.excel_export_mode = _process_excel_export_mode(excel_export_mode.lower())
-        obj.dtypes = _process_data_types(convert_to_original_types, data)
 
         # remaining items do not need cleaning
         obj.height = height
         obj.allow_unsafe_js = allow_unsafe_js
         obj.enable_enterprise_modules = enable_enterprise_modules
         obj.license_key = license_key
+        obj.convert_to_original_types = convert_to_original_types
         obj.reload_data = reload_data
-        obj.columns_state = column_state
+        obj.columns_state = columns_state
         obj.custom_css = custom_css
         obj.update_on = update_on
         obj.enable_quick_search = enable_quick_search
 
         # handle the grid options now
-        if isinstance(grid_options, GridOptionsBuilder):
+        if grid_options is None:
+            # if it is None, create default instance from data
+            obj.grid_options = GridOptionsBuilder.from_data(data).build()
+        elif isinstance(grid_options, GridOptionsBuilder):
+            # if it's from the Builder, built it
             obj.grid_options = grid_options.build()
         elif isinstance(grid_options, dict):
+            # otherwise we should save it
             obj.grid_options = grid_options
+        else:
+            raise GridBuilderError(
+                f"Unknown type for grid options: '{type(grid_options)}'"
+            )
 
-        # now update with the passed kwargs
-        obj.grid_options.update(**kwargs)
-        
+        # now update with the embedded JS code
+        walk_grid_options(
+            obj.grid_options,
+            lambda v: v.code if isinstance(v, JsCode) else v
+        )
+
         return obj.process_deprecated(**kwargs)
 
     def process_deprecated(self, **kwargs: Mapping):
         """ In case we need to process deprecated parameters, handle them here. """
         return self
+
