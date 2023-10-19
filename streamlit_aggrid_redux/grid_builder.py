@@ -5,15 +5,14 @@ import pandas as pd
 import pyarrow as pa
 
 from typing import List, Mapping, Union, Dict, Tuple, Literal
-from streamlit.type_util import convert_anything_to_df
 from streamlit.errors import StreamlitAPIException
+from streamlit.type_util import convert_anything_to_df
 
 # local import
 from .code import JsCode
-from .errors import GridBuilderError, GridOptionsBuilderError
+from .types import DataElement
+from .errors import GridBuilderError
 from .grid_options_builder import GridOptionsBuilder, walk_grid_options
-
-DataElement = Union[pd.DataFrame, pa.Table, np.ndarray, dict, str]
 
 
 ######################################################################

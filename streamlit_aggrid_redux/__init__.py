@@ -11,11 +11,12 @@ from streamlit.components.v1.components import MarshallComponentException
 
 # local imports
 from .code import JsCode
+from .types import DataElement
 from .errors import GridBuilderError, GridOptionsBuilderError
-from .grid_return import GridReturn, generate_response
-from .grid_builder import GridBuilder, DataElement
-from .grid_options_builder import GridOptionsBuilder
 from .version import version, __version__
+from .grid_return import GridReturn, generate_response
+from .grid_builder import GridBuilder
+from .grid_options_builder import GridOptionsBuilder
 
 # ensure these imports can be used in Python code importing this module
 __all__ = [

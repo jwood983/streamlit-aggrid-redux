@@ -8,10 +8,8 @@ from typing import Dict, Union, Mapping, List, Callable
 from streamlit.type_util import convert_anything_to_df
 
 # local import
+from .types import DataElement
 from .errors import GridOptionsBuilderError
-
-
-DataElement = Union[np.ndarray, pd.DataFrame, pa.Table, dict, str]
 
 
 def _pandas_types(d: str) -> List[str]:

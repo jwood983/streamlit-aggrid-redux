@@ -6,17 +6,47 @@ import pyarrow as pa
 
 from typing import Union, Any, List, Dict, Literal
 
+# local imports
+from .types import DataElement
+
 
 class GridReturn(tuple):
-    """ Effectively this class is a named tuple. """
-    data: Union[pd.DataFrame, pa.Table, np.ndarray, dict, str] = None
+    """A data-only class that yields the output of the AgGrid component. """
+    data: DataElement = None
     selected_rows: List[Dict] = None
     column_state: List[Dict] = None
 
     def __new__(cls,
-                data: Union[pd.DataFrame, pa.Table, np.ndarray, dict, str] = None,
+                data: DataElement,
                 selected_rows: List[Dict] = None,
                 column_state: List[Dict] = None):
+        """The set of data returned from the AgGrid Component,
+        which contains either the original data or the modified
+        data from AgGrid.
+        
+        Parameters
+        ----------
+        data: {np.ndarray, pd.DataFrame, pa.Table, dict, str}
+            The data to return to users. If the data was reduced
+            in some way in the grid (e.g., filtering, sorting),
+            then it is the reduced data instead.
+
+            The returned data is always in the original data format.
+        
+        selected_rows: list of dicts, optional
+            If the user selected rows in the displayed grid, these
+            rows are returned to the user. When nothing is selected,
+            this is None.
+        
+        column_state: list of dicts, optional
+            Another output of the AgGrid component. Likely not needed
+            in Python development.
+        
+        Returns
+        -------
+        GridReturn
+            The output from the AgGrid call.
+        """
         obj = super().__new__(cls)
         obj.data = data
         obj.selected_rows = selected_rows
@@ -74,7 +104,8 @@ def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
     if len(frame) == 0:
         return GridReturn(data)
 
-    # check types before converting
+    # we always want to convert the output back to the input
+    # for consistency of the users
     if isinstance(data, pd.DataFrame):
         if convert_to_original_types:
             frame = frame.astype(data.dtypes.to_dict(), errors=errors)
@@ -89,7 +120,7 @@ def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
         else:
             frame = frame.to_numpy()
     elif isinstance(data, dict):
-        # no data type coercion possible
+        # no data type coercion possible?
         frame = frame.to_dict()
     elif isinstance(data, str):
         # no data type coercion possible?
