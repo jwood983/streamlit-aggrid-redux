@@ -265,7 +265,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         this.parseGridOptions()
     }
 
-    private parseGridoptions() {
+    private parseGridOptions() {
         let gridOptions = Object.assign(
             {},
             columnFormatters,
@@ -388,7 +388,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         })
         
         let returnValue = {
-            originalDtypes: this.props.args.frame_dtypes,
             rowData: returnData,
             selectedItems: this.api.getSelectedNodes().map((n, i) => ({
                 _selectedRowNodeInfo: { nodeRowIndex: n.rowIndex, nodeId: n.id },
