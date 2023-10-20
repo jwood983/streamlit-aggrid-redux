@@ -1,10 +1,7 @@
 """ The main workhorse of the package, massages inputs to fit component needs. """
 import json
-import numpy as np
-import pandas as pd
-import pyarrow as pa
 
-from typing import List, Mapping, Union, Dict, Tuple, Literal
+from typing import List, Mapping, Union, Dict, Tuple, Literal, Iterable
 from streamlit.errors import StreamlitAPIException
 from streamlit.type_util import convert_anything_to_df
 
@@ -18,20 +15,24 @@ from .grid_options_builder import GridOptionsBuilder, walk_grid_options
 ######################################################################
 # Converter functions
 ######################################################################
-def _make_error_msg(field: str, input: str, options: List[str]):
+def _make_error_msg(field: str, input: str, options: Iterable[str]):
     """ Helper function to make a cleaner error message. """
     opts = ', '.join(map(lambda x: f"'{x}'", options))
     return f"Input {field} '{input}' is invalid. Options are {opts}."
 
 
-def _serialize_data(data: DataElement) -> Dict:
+def _serialize_data(data: DataElement) -> List[Dict]:
     """ Convert the input data element into a JSON string. """
     try:
         frame = convert_anything_to_df(data, ensure_copy=True, allow_styler=False)
     except (ValueError, StreamlitAPIException):
         # reraise error
         raise GridBuilderError(f"Cannot serialize data of type '{type(data)}'")
-    return frame.to_dict()
+    # fix Datetime and Timestamp columns
+    for column, dtype in zip(frame.columns, frame.dtypes):
+        if dtype in ("m", "M"):
+            frame[column] = frame[column].astype(str)
+    return json.loads(frame.to_json(orient="records", date_format="%Y/%m/%d %H:%M:%s"))
 
 
 def _process_auto_size_mode(mode: str) -> int:
@@ -58,20 +59,11 @@ def _process_return_mode(mode: str) -> int:
         )
 
 
-def _process_conversions(convert: bool, errors: str) -> str:
-    """ Ensure the conversion errors parameter, if requested, is correct. """
-    error_opts = ("raise", "coerce", "ignore")
-    if convert and errors not in error_opts:
-        raise GridBuilderError(
-            _make_error_msg("Conversion error", errors, error_opts)
-        )
-    return errors
-
-
 def _process_theme(theme: str) -> str:
     """ Ensure the theme is correct. """
-    theme_opts = ("alpine", "balham", "material", "streamlit", "excel", "astro")
-    if theme not in theme_opts:
+    theme_opts = ("alpine", "balham", "material", "streamlit", "excel", "astro",
+                  "alpine-dark", "balham-dark", "streamlit-dark", "astro-dark")
+    if theme.split not in theme_opts:
         raise GridBuilderError(_make_error_msg("Theme", theme, theme_opts))
     return theme
 
@@ -91,18 +83,32 @@ def _process_excel_export_mode(mode: str) -> str:
 
 
 def _process_conversion_errors(convert: bool, errors: str) -> str:
-    if convert and errors not in ("raise", "coerce", "ignore"):
+    if convert and errors not in ("raise", "coerce"):
         raise GridBuilderError(
-            f"Error handling '{errors}' is invalid, should be 'raise', 'coerce' or 'ignore'"
+            f"Error handling '{errors}' is invalid, should be 'raise' or 'ignore'"
         )
     return errors
+
+
+def _process_css(custom_css: Union[Dict, str]) -> Dict:
+    """ Ensure the CSS is a python dict. """
+    if custom_css is None:
+        return dict()
+    elif isinstance(custom_css, Dict):
+        return custom_css
+    elif isinstance(custom_css, str):
+        return json.loads(custom_css)
+    else:
+        raise GridBuilderError(
+            f"Custom CSS is neither a dict nor a string by {type(custom_css)}"
+        )
 
 
 ######################################################################
 # Builder Class
 ######################################################################
 class GridBuilder:
-    data: Dict = dict()
+    data: List[Dict] = [dict()]
     grid_options: Dict = None
     height: int = None
     columns_auto_size_mode: int = 0
@@ -111,11 +117,11 @@ class GridBuilder:
     enable_enterprise_modules: bool = True
     license_key: str = None
     convert_to_original_types: bool = True
-    errors: Literal["raise", "ignore", "coerce"] = "coerce"
+    errors: Literal["raise", "ignore"] = "ignore"
     reload_data: bool = False
-    columns_state: List[Dict] = None
+    column_state: List[Dict] = None
     theme: str = "streamlit"
-    custom_css: str = None
+    custom_css: Dict = None
     update_on: List[Union[str, Tuple[str, int]]] = None
     enable_quick_search: bool = False
     excel_export_mode: str = "none"
@@ -130,9 +136,9 @@ class GridBuilder:
                 enable_enterprise_modules: bool = True,
                 license_key: str = None,
                 convert_to_original_types: bool = True,
-                errors: str = "coerce",
+                errors: str = "ignore",
                 reload_data: bool = False,
-                columns_state: List[Dict] = None,
+                column_state: List[Dict] = None,
                 theme: str = "streamlit",
                 custom_css: str = None,
                 update_on: List[str | Tuple[str, int]] = None,
@@ -149,6 +155,7 @@ class GridBuilder:
         obj.errors = _process_conversion_errors(convert_to_original_types, errors.lower())
         obj.theme = _process_theme(theme.lower())
         obj.excel_export_mode = _process_excel_export_mode(excel_export_mode.lower())
+        obj.custom_css = _process_css(custom_css)
 
         # remaining items do not need cleaning
         obj.height = height
@@ -157,8 +164,7 @@ class GridBuilder:
         obj.license_key = license_key
         obj.convert_to_original_types = convert_to_original_types
         obj.reload_data = reload_data
-        obj.columns_state = columns_state
-        obj.custom_css = custom_css
+        obj.column_state = column_state
         obj.update_on = update_on
         obj.enable_quick_search = enable_quick_search
 
@@ -172,6 +178,9 @@ class GridBuilder:
         elif isinstance(grid_options, dict):
             # otherwise we should save it
             obj.grid_options = grid_options
+        elif isinstance(grid_options, str):
+            # maybe they passed a string version?
+            obj.grid_options = json.loads(grid_options)
         else:
             raise GridBuilderError(
                 f"Unknown type for grid options: '{type(grid_options)}'"

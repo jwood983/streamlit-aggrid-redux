@@ -10,11 +10,11 @@ from typing import Union, Any, List, Dict, Literal
 from .types import DataElement
 
 
-class GridReturn(tuple):
+class GridReturn:
     """A data-only class that yields the output of the AgGrid component. """
-    data: DataElement = None
-    selected_rows: List[Dict] = None
-    column_state: List[Dict] = None
+    data_: DataElement = None
+    selected: List[Dict] = None
+    state: List[Dict] = None
 
     def __new__(cls,
                 data: DataElement,
@@ -48,22 +48,40 @@ class GridReturn(tuple):
             The output from the AgGrid call.
         """
         obj = super().__new__(cls)
-        obj.data = data
-        obj.selected_rows = selected_rows
-        obj.column_state = column_state
+        obj.data_ = data
+        obj.selected = selected_rows
+        obj.state = column_state
         return obj
+    
+    def __str__(self):
+        """ Display the simple facts about the data """
+        return f"GridReturn(data={self.data_}, selected_rows={self.selected}, columns_state={self.state})"
+    
+    def __getitem__(self, key: str):
+        if key.lower() == "data":
+            return self.data_
+        elif key.lower().startswith("select"):
+            return self.selected
+        elif key.lower().startswith("column"):
+            return self.state
+        else:
+            raise KeyError(f"Key '{key}' is invalid")
+    
+    @property
+    def data(self):
+        return self.data_
+    
+    @property
+    def selected_rows(self):
+        return self.selected
+    
+    @property
+    def column_state(self):
+        return self.state
 
 
-def _cast_to_time_delta(x: pd.Series) -> Union[pd.Timedelta, pd.Series]:
-    """ Try coercing the series to a Timedelta object. """
-    try:
-        return pd.Timedelta(x)
-    except ValueError:
-        return x
-
-
-def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
-                      component_value: Any,
+def generate_response(component_value: Any,
+                      data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
                       convert_to_original_types: bool,
                       errors: Literal["raise", "ignore", "coerce"]) -> GridReturn:
     """Generate the response according to the selected parameters and the 
@@ -71,14 +89,14 @@ def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
 
     Parameters
     ---------
+    component_value: Any
+        The response from the streamlit component.
+
     data: {pd.DataFrame, pa.Table, np.ndarray, str}
         The original dataframe passed to the AgGrid builder.
         If there is no data output from the AgGrid call,
         this is returned to the user; it is ignored when
         there is a return value.
-
-    component_value: Any
-        The response from the streamlit component.
 
     convert_to_original_types: bool
         The flag indicating if we should try converting the
@@ -94,7 +112,7 @@ def generate_response(data: Union[pd.DataFrame, pa.Table, np.ndarray, str],
         The returned namedtuple-like class that contains the
         responses from the AgGrid Component.
     """
-    if not component_value:
+    if component_value is None:
         return GridReturn(data)
 
     if isinstance(component_value, str):

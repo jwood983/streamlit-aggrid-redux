@@ -2,6 +2,7 @@
 import streamlit.components.v1 as components
 
 import os
+import json
 import warnings
 
 # common imports
@@ -21,11 +22,12 @@ from .grid_options_builder import GridOptionsBuilder
 # ensure these imports can be used in Python code importing this module
 __all__ = [
     'JsCode',
+    'DataElement',
     'GridBuilderError', 'GridOptionsBuilderError',
+    'version', '__version__',
     'GridReturn',
-    'GridBuilder', 'DataElement'
-    'GridOptionsBuilder',
-    'version', '__version__'
+    'GridBuilder',
+    'GridOptionsBuilder'
 ]
 
 
@@ -51,9 +53,9 @@ def ag_grid(data: DataElement,
             enable_enterprise_modules: bool = True,
             license_key: str = None,
             convert_to_original_types: bool = True,
-            errors: str = "coerce",
+            errors: str = "ignore",
             reload_data: bool = False,
-            columns_state: List[Dict] = None,
+            column_state: List[Dict] = None,
             theme: str = "streamlit",
             custom_css: str = None,
             key: str = None,
@@ -118,14 +120,13 @@ def ag_grid(data: DataElement,
 
     errors: str, optional
         A string flag to passed to Pandas data converters. Options
-        are "coerce", "ignore" or "raise". Default is "coerce" which
-        makes invalid cells NaN/NaT.
+        are "ignore" or "raise". Default is "ignore".
 
     reload_data: bool, optional
         A flag indicating whether AgGrid should reload data when
         refreshing. Default is
 
-    columns_state: List[Dict], optional
+    column_state: List[Dict], optional
         A set of dictionaries of how the data should be displayed
         in AgGrid. Default is None.
 
@@ -186,7 +187,7 @@ def ag_grid(data: DataElement,
             convert_to_original_types,
             errors,
             reload_data,
-            columns_state,
+            column_state,
             theme,
             custom_css,
             update_on,
@@ -202,9 +203,6 @@ def ag_grid(data: DataElement,
     if not _RELEASE and "return_mode" in kwargs and kwargs["return_mode"]:
         return grid
 
-    # throw an error for now
-    # raise NotImplementedError("Working on it")
-
     # now call the component
     try:
         component_value = _component_func(
@@ -217,7 +215,7 @@ def ag_grid(data: DataElement,
             enable_enterprise_modules=grid.enable_enterprise_modules,
             license_key=grid.license_key,
             reload_data=grid.reload_data,
-            columns_state=grid.columns_state,
+            column_state=grid.column_state,
             theme=grid.theme,
             custom_css=grid.custom_css,
             update_on=grid.update_on,
