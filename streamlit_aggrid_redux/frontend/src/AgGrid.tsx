@@ -7,6 +7,7 @@ import { CsvExportModule } from "@ag-grid-community/csv-export"
 import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model"
 import { ModuleRegistry, ColumnApi, GridApi, DetailGridInfo } from "@ag-grid-community/core"
 
+// need to move all of these enterprise modules to another package
 import { MenuModule } from "@ag-grid-enterprise/menu"
 import { LicenseManager } from "@ag-grid-enterprise/core"
 import { SideBarModule } from "@ag-grid-enterprise/side-bar"
@@ -24,12 +25,11 @@ import { RangeSelectionModule } from "@ag-grid-enterprise/range-selection"
 import { ColumnsToolPanelModule } from "@ag-grid-enterprise/column-tool-panel"
 import { FiltersToolPanelModule } from "@ag-grid-enterprise/filter-tool-panel"
 
-import { duration } from "moment"
-import { format } from "date-fns-tz"
 import { debounce, throttle } from "lodash"
-import { parseISO, compareAsc } from "date-fns"
 
+// local imports
 import deepMap from "./utils"
+
 
 //import "./agGridStyle.scss"
 import "@ag-grid-community/styles/ag-grid.css";
@@ -66,72 +66,6 @@ function addCustomCss(customCss: CSSDict): void {
     document.head.appendChild(styleSheet)
 }
 
-function dateFormatter(isoString: string, formatterString: string): String {
-    try {
-        let date = parseISO(isoString)
-        return format(date, formatterString)
-    }
-    catch {
-        return isoString
-    }
-    finally {
-      // does nothing on purpose
-    }
-}
-
-function currencyFormatter(number: any, currencySymbol: string): String {
-    let n = Number.parseFloat(number)
-    if (!Number.isNaN(n)) {
-        return currencySymbol + n.toFixed(2)
-    }
-    else {
-        return number
-    }
-}
-
-function numberFormatter(number: any, precision: number): String {
-    let n = Number.parseFloat(number)
-    if (!Number.isNaN(n)) {
-        return n.toFixed(precision)
-    }
-    else {
-        return number
-    }
-}
-
-const columnFormatters = {
-    columnTypes: {
-        dateColumnFilter: {
-            filter: "agDateColumnFilter",
-            filterParams: {
-                comparator: (filterValue: any, cellValue: string) => 
-                    compareAsc(parseISO(cellValue), filterValue),
-            },
-        },
-        numberColumnFilter: {
-            filter: "agNumberColumnFilter",
-        },
-        shortDateTimeFormat: {
-            valueFormatter: (params: any) =>
-                dateFormatter(params.value, "dd/MM/yyyy HH:mm"),
-        },
-        customDateTimeFormat: {
-            valueFormatter: (params: any) =>
-                dateFormatter(params.value, params.column.colDef.custom_format_string),
-        },
-        customNumericFormat: {
-            valueFormatter: (params: any) =>
-                numberFormatter(params.value, params.column.colDef.precision ?? 2),
-        },
-        customCurrencyFormat: {
-            valueFormatter: (params: any) =>
-                currencyFormatter(params.value, params.column.colDef.custom_currency_symbol),
-        },
-        timedeltaFormat: {
-            valueFormatter: (params: any) => duration(params.value).humanize(true),
-        },
-    },
-}
 
 function parseJsCodeFromPython(v: string) {
     const JS_PLACEHOLDER = "--x_x--0_0--"
@@ -260,9 +194,12 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     }
 
     private parseGridOptions() {
+        let formatter = () => {
+            import("./formatters").then(({ columnFormatters }) => { return columnFormatters; })
+        }
         let gridOptions = Object.assign(
             {},
-            columnFormatters,
+            formatter,
             this.props.args.grid_options
         )
         
