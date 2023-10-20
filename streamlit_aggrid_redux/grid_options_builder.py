@@ -1,10 +1,7 @@
 """ This module helps users construct the necessary grid options parameters to pass to AgGrid. """
 import json
-import numpy as np
-import pandas as pd
-import pyarrow as pa
 
-from typing import Dict, Union, Mapping, List, Callable
+from typing import Dict, Union, Mapping, List, Callable, Literal
 from streamlit.type_util import convert_anything_to_df
 
 # local import
@@ -12,18 +9,20 @@ from .types import DataElement
 from .errors import GridOptionsBuilderError
 
 
-def _pandas_types(d: str) -> List[str]:
+def _pandas_types(d: str) -> Dict:
     """ Convert the column type to a list of AgGrid types. """
     if d in ("i", "u", "f"):
         # a numeric column (integer or float)
-        return ["numericColumn", "numberColumnFilter"]
+        return dict(type="numericColumn", filter="numberColumnFilter")
     elif d == "m":
-        return ["timedeltaFormat"]
+        # a timedelta column
+        return dict(type="timedeltaFormat")
     elif d == "M":
-        ["dateColumnFilter", "shortDateTimeFormat"]
+        # date format
+        return dict(type="dateColumn", filter="dateColumnFilter")
     else:
         # is either s text column or unknown data, treat as text
-        return ["textColumn"]
+        return dict(type="rightAligned", filter="textColumnFilter")
 
 
 class GridOptionsBuilder:
@@ -37,18 +36,20 @@ class GridOptionsBuilder:
             self.grid_options = grid_options
         else:
             self.grid_options = dict()
+
+        # ensure the column defs is present
+        if "columnDefs" not in self.grid_options:
+            self.grid_options["columnDefs"] = dict()
             
         # use 'update' method to update with the remaining kwargs
         self.grid_options.update(kwargs)
 
         # save the default options for the grid
         self.default_options = dict(
-            min_width=100,
+            minWidth=100,
             editable=False,
-            filterable=True,
             sortable=True,
-            resizable=True,
-            groupable=False
+            resizable=True
         )
         if "defaultColDef" in kwargs:
             self.default_options.update(kwargs["defaultColDef"])
@@ -76,12 +77,15 @@ class GridOptionsBuilder:
         # options with nothing passed
         opt = GridOptionsBuilder(grid_options=dict())
 
+        # push the default options
+        opt.grid_options.update(**{"defaultColDef": opt.default_options})
+
         # convert the input to a frame to generate the options directly from pandas
         frame = convert_anything_to_df(data, ensure_copy=True, allow_styler=False)
-        for name, type in zip(frame.columns, frame.dtypes):
+        for name, dtype in zip(frame.columns, frame.dtypes):
             if "." in name:
-                opt.grid_options["suppressFieldDotNotation"] = True
-            opt.add_column(name, name **{type: _pandas_types(type)})
+                opt.grid_options.update(**{"suppressFieldDotNotation": True})
+            opt.add_column(name, name, **_pandas_types(dtype))
        
         return opt
 
@@ -168,19 +172,19 @@ class GridOptionsBuilder:
         return self
 
     def add_sidebar(self, filters: bool = False, columns: bool = False) -> 'GridOptionsBuilder':
-        """Add filters and/or column details to the side bar.
+        """Add filters and/or column details to the sidebar.
         Defaults are to ignore both, so this must be explicitly
         marked.
 
         Parameters
         ----------
         filters: bool, optional
-            A flag to add filters tool panel to the side
-            bar. Default is False to not add it.
+            A flag to add filters tool panel to the sidebar.
+            Default is False to not add it.
 
         columns: bool, optional
             A flag to add selectable columns tool pane
-            to the side bar. Default is False to not
+            to the sidebar. Default is False to not
             add it.
 
         Returns
@@ -219,12 +223,12 @@ class GridOptionsBuilder:
             else:
                 side_bar["toolPanels"].append(panel)
 
-        # save the side bar
+        # save the sidebar
         self.grid_options["sideBar"] = side_bar
         return self
 
     def add_grid_selection(self,
-                           selection_mode: str = "single",
+                           selection_mode: Literal["single", "multiple", "disabled"] = "single",
                            use_checkbox: bool = False,
                            use_header_checkbox: bool = False,
                            use_header_checkbox_filtered: bool = False,
@@ -276,7 +280,7 @@ class GridOptionsBuilder:
 
         suppress_deselection: bool, optional
             A flag indicating whether Ctrl key can suppress
-            deselecting all other rows. Defauls is False.
+            deselecting all other rows. Default is False.
 
         suppress_click_selection: bool, optional
             A flag indicating that clicking should not
@@ -301,7 +305,7 @@ class GridOptionsBuilder:
             self.grid_options.pop("rowSelection", None)
             self.grid_options.pop("rowMultiSeletWithClick", None)
             self.grid_options.pop("suppressRowDeselection", None)
-            self.grid_options.pop("suppresRowClickSelection", None)
+            self.grid_options.pop("suppressRowClickSelection", None)
             self.grid_options.pop("groupSelectsChildren", None)
             self.grid_options.pop("groupSelectsFiltered", None)
             return self
@@ -311,7 +315,7 @@ class GridOptionsBuilder:
             # ensure this is true when using checkboxes!
             suppress_click_selection = True
             # we only need to parse the first key because it will apply to all
-            first_key = self.grid_options["columnDefs"].keys()[0]
+            first_key = next(iter(self.grid_options["columnDefs"].keys()))
             self.grid_options["columnDefs"][first_key].update(
                 dict(
                     checkboxSelection=True,
@@ -323,17 +327,18 @@ class GridOptionsBuilder:
 
         # now maybe add pre-selected rows
         if len(pre_selected_rows) > 0:
-            self.grid_options["preSelectedRows"] = pre_selected_rows
+            self.grid_options.update(**{"preSelectedRows": pre_selected_rows})
 
-        # add remaining options directly
+        # add remaining options directly--note the case sensitivity of the arguments!
         self.grid_options.update(
-            dict(
-                rowSelection=selection_mode,
+            **dict(
+                rowSelection="single" if selection_mode.lower().startswith("si") else "multiple",
                 rowMultiSelectWithClick=multi_select_with_click,
-                suppressrowDeselection=suppress_deselection,
-                suppresRowClickSelection=suppress_click_selection,
+                suppressRowDeselection=suppress_deselection,
+                suppressRowClickSelection=suppress_click_selection,
                 groupSelectsChildren=group_selects_children,
-                groupSelectsFiltered=group_selects_filtered
+                groupSelectsFiltered=group_selects_filtered,
+                preSelectAllRows=False
             )
         )
         return self
@@ -362,14 +367,14 @@ class GridOptionsBuilder:
         """
         if auto_page_size:
             self.grid_options.update(
-                dict(
+                **dict(
                     pagination=True,
                     paginationAutoPageSize=True
                 )
             )
         else:
             self.grid_options.update(
-                dict(
+                **dict(
                     pagination=True,
                     paginationPageSize=page_size
                 )
@@ -399,7 +404,12 @@ class GridOptionsBuilder:
             The grid options data dictionary.
         """
         if not isinstance(self.grid_options["columnDefs"], list):
-            self.grid_options["columnDefs"] = list(self.grid_options["columnDefs"].values())
+            self.grid_options.update(
+                **dict(
+                    columnDefs=list(self.grid_options["columnDefs"].values())
+                )
+            )
+            
         return self.grid_options
 
     def __str__(self):

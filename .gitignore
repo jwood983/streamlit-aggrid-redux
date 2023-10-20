@@ -1,0 +1,9 @@
+# ignore pycache files
+__pycache__/*
+streamlit_aggrid_redux/__pycache__/*
+
+# ignore node_modules in frontend
+streamlit_aggrid_redux/frontend/node_modules/*
+
+# ignore all ~ files
+*~

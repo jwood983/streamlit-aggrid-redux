@@ -1,81 +1,85 @@
 {
-    "name": "frontend",
-    "version": "2023.10",
-    "private": true,
-    "dependencies": {
-        "@ag-grid-community/client-side-row-model": "^29.3.5",
-        "@ag-grid-community/core": "^29.3.5",
-        "@ag-grid-community/csv-export": "^29.3.5",
-        "@ag-grid-community/react": "^29.3.5",
-        "@ag-grid-community/styles": "^29.3.5",
-        "@ag-grid-enterprise/charts": "^29.3.5",
-        "@ag-grid-enterprise/clipboard": "^29.3.5",
-        "@ag-grid-enterprise/column-tool-panel": "^29.3.5",
-        "@ag-grid-enterprise/core": "^29.3.5",
-        "@ag-grid-enterprise/excel-export": "^29.3.5",
-        "@ag-grid-enterprise/filter-tool-panel": "^29.3.5",
-        "@ag-grid-enterprise/master-detail": "^29.3.5",
-        "@ag-grid-enterprise/menu": "^29.3.5",
-        "@ag-grid-enterprise/multi-filter": "^29.3.5",
-        "@ag-grid-enterprise/range-selection": "^29.3.5",
-        "@ag-grid-enterprise/rich-select": "^29.3.5",
-        "@ag-grid-enterprise/row-grouping": "^29.3.5",
-        "@ag-grid-enterprise/set-filter": "^29.3.5",
-        "@ag-grid-enterprise/side-bar": "^29.3.5",
-        "@ag-grid-enterprise/sparklines": "^29.3.5",
-        "@ag-grid-enterprise/status-bar": "^29.3.5",
-        "@fontsource/source-sans-pro": "^4.5.11",
-        "@astrouxds/ag-grid-theme": "^6.0.1",
-        "@types/jest": "^29.4.0",
-        "@types/lodash": "^4.14.191",
-        "@types/node": "^18.14.2",
-        "@types/react": "^18.0.28",
-        "@types/react-dom": "^18.0.11",
-        "apache-arrow": "^11.0.0",
-        "base64-arraybuffer": "^1.0.2",
-        "buffer": "^6.0.3",
-        "date-fns": "^2.29.3",
-        "date-fns-tz": "^2.0.0",
-        "lodash": "^4.17.21",
-        "moment": "^2.29.4",
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
-        "react-scripts": "^5.0.1",
-        "sass": "^1.58.3",
-        "streamlit-component-lib": "^1.4.0",
-        "typescript": "^4.9.5"
-    },
-    "scripts": {
-        "analyze": "source-map-explorer 'build/static/js/*.js'",
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject"
-    },
-    "eslintConfig": {
-        "extends": "react-app"
-    },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
-    },
-    "homepage": ".",
-    "devDependencies": {
-        "source-map-explorer": "^2.5.3",
-        "@babel/core": "7.2.0"
-    },
-    "keywords": [
-        "javascript",
-        "starter",
-        "aggrid"
+  "name": "frontend",
+  "version": "0.1.0",
+  "description": "Interface for AgGrid to Streamlit",
+  "main": "index.js",
+  "scripts": {
+    "test": "react-scripts test",
+    "build": "react-scripts build",
+    "eject": "react-scripts eject",
+    "start": "react-scripts start",
+    "analyze": "source-map-explorer 'build/static/js/*.js'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jwood983/streamlit-aggrid-redux"
+  },
+  "keywords": [
+    "aggrid",
+    "streamlit"
+  ],
+  "author": "JD Wood",
+  "license": "MIT",
+  "dependencies": {
+    "streamlit-component-lib": "^2.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "^5.0.1",
+    "@ag-grid-community/core": "^30.2.0",
+    "@ag-grid-community/react": "^30.2.0",
+    "@ag-grid-community/styles": "^30.2.0",
+    "@ag-grid-community/csv-export": "^30.2.0",
+    "@ag-grid-community/client-side-row-model": "^30.2.0",
+    "@ag-grid-enterprise/core": "^30.2.0",
+    "@ag-grid-enterprise/menu": "^30.2.0",
+    "@ag-grid-enterprise/charts": "^30.2.0",
+    "@ag-grid-enterprise/side-bar": "^30.2.0",
+    "@ag-grid-enterprise/clipboard": "^30.2.0",
+    "@ag-grid-enterprise/set-filter": "^30.2.0",
+    "@ag-grid-enterprise/sparklines": "^30.2.0",
+    "@ag-grid-enterprise/status-bar": "^30.2.0",
+    "@ag-grid-enterprise/rich-select": "^30.2.0",
+    "@ag-grid-enterprise/excel-export": "^30.2.0",
+    "@ag-grid-enterprise/multi-filter": "^30.2.0",
+    "@ag-grid-enterprise/row-grouping": "^30.2.0",
+    "@ag-grid-enterprise/master-detail": "^30.2.0",
+    "@ag-grid-enterprise/range-selection": "^30.2.0",
+    "@ag-grid-enterprise/column-tool-panel": "^30.2.0",
+    "@ag-grid-enterprise/filter-tool-panel": "^30.2.0",
+    "@fontsource/source-sans-pro": "^5.0.8",
+    "@astrouxds/ag-grid-theme": "^7.0.0",
+    "@types/jest": "^29.5.6",
+    "@types/node": "^20.8.7",
+    "@types/lodash": "^4.14.200",
+    "@types/react": "^18.2.30",
+    "@types/react-dom": "^18.2.14",
+    "sass": "^1.69.4",
+    "moment": "^2.29.4",
+    "lodash": "^4.17.21",
+    "date-fns": "^2.30.0",
+    "typescript": "^4.9.5",
+    "date-fns-tz": "^2.0.0",
+    "apache-arrow": "^13.0.0",
+    "sass-loader": "^13.3.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "source-map-explorer": "^2.5.3"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "homepage": "."
 }
-    

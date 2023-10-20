@@ -1,51 +1,46 @@
-import {
-    Streamlit,
-    ComponentProps,
-    withStreamlitConnection,
-} from "streamlit-component-lib"
+import { Streamlit, ComponentProps, withStreamlitConnection, } from "streamlit-component-lib"
 
 import React, { ReactNode } from "react"
 import { AgGridReact } from "@ag-grid-community/react"
 
-import {
-    ModuleRegistry,
-    ColumnApi,
-    GridApi,
-    DetailGridInfo
-} from "@ag-grid-community/core"
 import { CsvExportModule } from "@ag-grid-community/csv-export"
 import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model"
-import { LicenseManager } from "@ag-grid-enterprise/core"
+import { ModuleRegistry, ColumnApi, GridApi, DetailGridInfo } from "@ag-grid-community/core"
 
-import { GridChartsModule } from "@ag-grid-enterprise/charts"
-import { SparklinesModule } from "@ag-grid-enterprise/sparklines"
-import { ClipboardModule } from "@ag-grid-enterprise/clipboard"
-import { ColumnsToolPanelModule } from "@ag-grid-enterprise/column-tool-panel"
-import { ExcelExportModule } from "@ag-grid-enterprise/excel-export"
-import { FiltersToolPanelModule } from "@ag-grid-enterprise/filter-tool-panel"
-import { MasterDetailModule } from "@ag-grid-enterprise/master-detail"
 import { MenuModule } from "@ag-grid-enterprise/menu"
-import { RangeSelectionModule } from "@ag-grid-enterprise/range-selection"
-import { RichSelectModule } from "@ag-grid-enterprise/rich-select"
-import { RowGroupingModule } from "@ag-grid-enterprise/row-grouping"
-import { SetFilterModule } from "@ag-grid-enterprise/set-filter"
-import { MultiFilterModule } from "@ag-grid-enterprise/multi-filter"
+import { LicenseManager } from "@ag-grid-enterprise/core"
 import { SideBarModule } from "@ag-grid-enterprise/side-bar"
+import { GridChartsModule } from "@ag-grid-enterprise/charts"
+import { ClipboardModule } from "@ag-grid-enterprise/clipboard"
+import { SetFilterModule } from "@ag-grid-enterprise/set-filter"
 import { StatusBarModule } from "@ag-grid-enterprise/status-bar"
+import { SparklinesModule } from "@ag-grid-enterprise/sparklines"
+import { RichSelectModule } from "@ag-grid-enterprise/rich-select"
+import { ExcelExportModule } from "@ag-grid-enterprise/excel-export"
+import { MultiFilterModule } from "@ag-grid-enterprise/multi-filter"
+import { RowGroupingModule } from "@ag-grid-enterprise/row-grouping"
+import { MasterDetailModule } from "@ag-grid-enterprise/master-detail"
+import { RangeSelectionModule } from "@ag-grid-enterprise/range-selection"
+import { ColumnsToolPanelModule } from "@ag-grid-enterprise/column-tool-panel"
+import { FiltersToolPanelModule } from "@ag-grid-enterprise/filter-tool-panel"
 
-import { parseISO, compareAsc } from "date-fns"
-import { format } from "date-fns-tz"
-import deepMap from "./utils"
 import { duration } from "moment"
-
+import { format } from "date-fns-tz"
 import { debounce, throttle } from "lodash"
+import { parseISO, compareAsc } from "date-fns"
 
-import { encode, decode } from "base64-arraybuffer"
-import { Buffer } from "buffer"
+import deepMap from "./utils"
 
-import "./agGridStyle.scss"
+//import "./agGridStyle.scss"
+import "@ag-grid-community/styles/ag-grid.css";
+import "@ag-grid-community/styles/ag-theme-alpine.css";
+import "@ag-grid-community/styles/ag-theme-balham.css";
+import "@ag-grid-community/styles/ag-theme-material.css";
+import "./ag-theme-excel.min.css"
+import "./ag-theme-streamlit.min.css"
 
-import "@fontsource/source-sans-pro"
+import "@astrouxds/ag-grid-theme/dist/main.css";
+import "@fontsource/source-sans-pro";
 
 type CSSDict = { [key: string]: { [key: string]: string } }
 
@@ -212,7 +207,6 @@ function ManualDownloadButton(props: any) {
 class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     private api!: GridApi
     private columnApi!: ColumnApi
-    private columnFormatters: any
     private gridOptions: any
     private gridContainerRef: React.RefObject<HTMLDivElement>
     private isGridAutoHeightOn: boolean
@@ -293,14 +287,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         })
     }
 
-    private loadColumnsState() {
-        const columnsState = this.props.args.columns_state
-        
-        if (columnsState != null) {
-            this.columnApi.applyColumnState({ state: columnsState, applyOrder: true })
-        }
-    }
-
     private downloadAsExcelIfRequested() {
         if (this.api && this.props.args.excel_export_mode === "TRIGGER") {
             this.api.exportDataAsExcel()
@@ -315,7 +301,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
 
     private resizeGridContainer() {
         const renderedGridHeight = this.gridContainerRef.current?.clientHeight
-        if (renderedGridHeight && renderedGridHeight > 0 && renderedGridHeight != this.renderedGridHeightPrevious) {
+        if (renderedGridHeight && renderedGridHeight > 0 && renderedGridHeight !== this.renderedGridHeightPrevious) {
             this.renderedGridHeightPrevious = renderedGridHeight
             Streamlit.setFrameHeight(renderedGridHeight)
 
@@ -389,11 +375,14 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         
         let returnValue = {
             rowData: returnData,
+            selectedData: selected,
+            selectedRows: this.api.getSelectedRows(),
             selectedItems: this.api.getSelectedNodes().map((n, i) => ({
                 _selectedRowNodeInfo: { nodeRowIndex: n.rowIndex, nodeId: n.id },
                 ...n.data,
-            })),
-            colState: this.columnApi.getColumnState()
+            }))
+            // uncomment the below line for debugging help; otherwise is useless
+            //, colState: this.columnApi.getColumnState()
         }
         // console.dir(returnValue)
         return returnValue
@@ -482,7 +471,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         else {
             if (this.gridOptions["preSelectedRows"] || this.gridOptions["preSelectedRows"]?.length() > 0) {
                 for (var idx in this.gridOptions["preSelectedRows"]) {
-                    this.api.getRowNode(this.gridOptions["preSelectedRows"][idx])?.setSelected(true, false, true)
+                    this.api.getRowNode(this.gridOptions["preSelectedRows"][idx])?.setSelected(true, false, 'selectableChanged')
                     this.returnGridValue()
                 }
             }
