@@ -37,6 +37,7 @@ import "@ag-grid-community/styles/ag-theme-alpine.css";
 import "@ag-grid-community/styles/ag-theme-balham.css";
 import "@ag-grid-community/styles/ag-theme-material.css";
 import "./ag-theme-excel.css"
+import "./ag-theme-streamlit.css"
 
 import "@astrouxds/ag-grid-theme/dist/main.css";
 import "@fontsource/source-sans-pro";
