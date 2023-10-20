@@ -1,0 +1,23 @@
+root = true
+
+# default for all programming languages
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Python specific files
+[*.py]
+indent_style = space
+indent_size = 4
+
+# CSS files
+[*.css]
+indent_size = 2
+indent_style = space
+
+# JavaScript files
+[*.{tsx,js}]
+indent_size = 4
+indent_style = space

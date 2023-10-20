@@ -1,7 +1,7 @@
 
 /* Edit these to match streamlit! */
 .ag-theme-streamlit, .ag-theme-streamlit-dark {
-    --ag-streamlit-active-color: #0052cc;
+    --ag-streamlit-active-color: #ff4b4b;
     --ag-selected-row-background-color: rgba(33, 150, 243, 0.3);
     --ag-row-hover-color: rgba(33, 150, 243, 0.1);
     --ag-column-hover-color: rgba(33, 150, 243, 0.1);
@@ -12,7 +12,7 @@
     --ag-range-selection-background-color-4: rgba(33, 150, 243, 0.59);
     --ag-background-color: #fff;
     --ag-foreground-color: #31333f;
-    --ag-border-color: #eaeaeb;
+    --ag-border-color: rgba(250, 250, 250, 0.1);
     --ag-secondary-border-color: #dde2eb;
     --ag-header-foreground-color: #7f838a;
     --ag-header-background-color: #f8f8f8;
@@ -59,7 +59,7 @@
     --ag-widget-vertical-spacing: calc(var(--ag-grid-size) * 1.5);
     --ag-toggle-button-height: 18px;
     --ag-toggle-button-width: 28px;
-    --ag-font-family: "Alegreya", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    --ag-font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     --ag-font-size: 14px;
     --ag-icon-font-family: agGridAlpine;
     --ag-selected-tab-underline-color: var(--ag-streamlit-active-color);
@@ -75,7 +75,7 @@
     --ag-streamlit-active-color: #ff4b4b;
     --ag-background-color: #0e1117;
     --ag-foreground-color: #fff;
-    --ag-border-color: #303239;
+    --ag-border-color: rgba(250, 250, 250, 0.1);
     --ag-secondary-border-color: rgba(88, 86, 82, 0.5);
     --ag-modal-overlay-background-color: rgba(24, 29, 31, 0.66);
     --ag-header-background-color: #1d1c24;
@@ -98,16 +98,26 @@
     --ag-advanced-filter-option-pill-color: #5a3168;
     --ag-advanced-filter-value-pill-color: #374c86;
   }
+
+  .ag-theme-streamlit .ag-filter-toolpanel-search,
+  .ag-theme-streamlit-dark .ag-filter-toolpanel-search {
+    font-weight: 700;
+    color: rgba(255, 75, 75, 0.1);
+  }
+
+  .ag-theme-streamlit .ag-header-row,
+  .ag-theme-streamlit-dark .ag-header-row {
+    font-weight: 400;
+    color: var(--ag-header-foreground-color);
+    text-align: left;
+  }
   
   .ag-theme-streamlit .ag-filter-toolpanel-header,
-  .ag-theme-streamlit .ag-filter-toolpanel-search,
   .ag-theme-streamlit .ag-status-bar,
-  .ag-theme-streamlit .ag-header-row,
   .ag-theme-streamlit .ag-panel-title-bar-title,
-  .ag-theme-streamlit .ag-multi-filter-group-title-bar, .ag-theme-streamlit-dark .ag-filter-toolpanel-header,
-  .ag-theme-streamlit-dark .ag-filter-toolpanel-search,
+  .ag-theme-streamlit .ag-multi-filter-group-title-bar,
+  .ag-theme-streamlit-dark .ag-filter-toolpanel-header,
   .ag-theme-streamlit-dark .ag-status-bar,
-  .ag-theme-streamlit-dark .ag-header-row,
   .ag-theme-streamlit-dark .ag-panel-title-bar-title,
   .ag-theme-streamlit-dark .ag-multi-filter-group-title-bar {
     font-weight: 700;
@@ -122,7 +132,8 @@
   .ag-theme-streamlit input[class^=ag-][type=tel],
   .ag-theme-streamlit input[class^=ag-][type=date],
   .ag-theme-streamlit input[class^=ag-][type=datetime-local],
-  .ag-theme-streamlit textarea[class^=ag-], .ag-theme-streamlit-dark input[class^=ag-]:not([type]),
+  .ag-theme-streamlit textarea[class^=ag-],
+  .ag-theme-streamlit-dark input[class^=ag-]:not([type]),
   .ag-theme-streamlit-dark input[class^=ag-][type=text],
   .ag-theme-streamlit-dark input[class^=ag-][type=number],
   .ag-theme-streamlit-dark input[class^=ag-][type=tel],
@@ -132,7 +143,20 @@
     min-height: calc(var(--ag-grid-size) * 4);
     border-radius: var(--ag-border-radius);
   }
-  .ag-theme-streamlit .ag-ltr input[class^=ag-]:not([type]), .ag-theme-streamlit .ag-ltr input[class^=ag-][type=text], .ag-theme-streamlit .ag-ltr input[class^=ag-][type=number], .ag-theme-streamlit .ag-ltr input[class^=ag-][type=tel], .ag-theme-streamlit .ag-ltr input[class^=ag-][type=date], .ag-theme-streamlit .ag-ltr input[class^=ag-][type=datetime-local], .ag-theme-streamlit .ag-ltr textarea[class^=ag-], .ag-theme-streamlit-dark .ag-ltr input[class^=ag-]:not([type]), .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=text], .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=number], .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=tel], .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=date], .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=datetime-local], .ag-theme-streamlit-dark .ag-ltr textarea[class^=ag-] {
+  .ag-theme-streamlit .ag-ltr input[class^=ag-]:not([type]),
+  .ag-theme-streamlit .ag-ltr input[class^=ag-][type=text],
+  .ag-theme-streamlit .ag-ltr input[class^=ag-][type=number],
+  .ag-theme-streamlit .ag-ltr input[class^=ag-][type=tel],
+  .ag-theme-streamlit .ag-ltr input[class^=ag-][type=date],
+  .ag-theme-streamlit .ag-ltr input[class^=ag-][type=datetime-local],
+  .ag-theme-streamlit .ag-ltr textarea[class^=ag-],
+  .ag-theme-streamlit-dark .ag-ltr input[class^=ag-]:not([type]),
+  .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=text],
+  .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=number],
+  .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=tel],
+  .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=date],
+  .ag-theme-streamlit-dark .ag-ltr input[class^=ag-][type=datetime-local],
+  .ag-theme-streamlit-dark .ag-ltr textarea[class^=ag-] {
     padding-left: var(--ag-grid-size);
   }
   
