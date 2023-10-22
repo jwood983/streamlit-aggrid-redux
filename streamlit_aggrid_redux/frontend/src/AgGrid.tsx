@@ -1,8 +1,8 @@
 import { Streamlit, ComponentProps, withStreamlitConnection, } from "streamlit-component-lib"
 
-import React, { ReactNode } from "react"
-import { AgGridReact } from "@ag-grid-community/react"
+import React, { ReactNode, lazy } from "react"
 
+import { AgGridReact } from "@ag-grid-community/react"
 import { CsvExportModule } from "@ag-grid-community/csv-export"
 import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model"
 import { ModuleRegistry, ColumnApi, GridApi, DetailGridInfo } from "@ag-grid-community/core"
@@ -30,17 +30,17 @@ import { debounce, throttle } from "lodash"
 // local imports
 import deepMap from "./utils"
 
-
 //import "./agGridStyle.scss"
-import "@ag-grid-community/styles/ag-grid.css";
-import "@ag-grid-community/styles/ag-theme-alpine.css";
-import "@ag-grid-community/styles/ag-theme-balham.css";
-import "@ag-grid-community/styles/ag-theme-material.css";
+import "@ag-grid-community/styles/ag-grid.min.css";
+import "@ag-grid-community/styles/ag-theme-alpine.min.css";
+import "@ag-grid-community/styles/ag-theme-balham.min.css";
+import "@ag-grid-community/styles/ag-theme-material.min.css";
 import "./ag-theme-excel.min.css"
 import "./ag-theme-streamlit.min.css"
 
 import "@astrouxds/ag-grid-theme/dist/main.css";
 import "@fontsource/source-sans-pro";
+
 
 type CSSDict = { [key: string]: { [key: string]: string } }
 
@@ -161,6 +161,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         }
 
         if (props.args.enable_enterprise_modules) {
+            // need to lazy load these modules...
             ModuleRegistry.registerModules([
                 ExcelExportModule,
                 GridChartsModule,
