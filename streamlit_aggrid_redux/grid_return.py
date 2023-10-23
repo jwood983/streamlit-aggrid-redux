@@ -13,13 +13,15 @@ from .types import DataElement
 class GridReturn:
     """A data-only class that yields the output of the AgGrid component. """
     data_: DataElement = None
-    selected: List[Dict] = None
-    state: List[Dict] = None
+    sel_data: List[Dict] = None
+    sel_row: List[Dict] = None
+    sel_items: List[Dict] = None
 
     def __new__(cls,
                 data: DataElement,
+                selected_data: List[Dict] = None,
                 selected_rows: List[Dict] = None,
-                column_state: List[Dict] = None):
+                selected_items: List[Dict] = None):
         """The set of data returned from the AgGrid Component,
         which contains either the original data or the modified
         data from AgGrid.
@@ -33,14 +35,18 @@ class GridReturn:
 
             The returned data is always in the original data format.
         
+        selected_data: list of dicts, optional
+            A list of elements that are selected. When nothing is
+            selected, this is None.
+        
         selected_rows: list of dicts, optional
             If the user selected rows in the displayed grid, these
             rows are returned to the user. When nothing is selected,
             this is None.
         
-        column_state: list of dicts, optional
-            Another output of the AgGrid component. Likely not needed
-            in Python development.
+        selected_items: list of dicts, optional
+            The set of selected rows from the AgGrid resonse. When
+            no items are selected, this is None.
         
         Returns
         -------
@@ -49,8 +55,9 @@ class GridReturn:
         """
         obj = super().__new__(cls)
         obj.data_ = data
-        obj.selected = selected_rows
-        obj.state = column_state
+        obj.sel_data = selected_data
+        obj.sel_row = selected_rows
+        obj.sel_items = selected_items
         return obj
     
     def __str__(self):
@@ -72,11 +79,15 @@ class GridReturn:
         return self.data_
     
     @property
+    def selected_data(self):
+        return self.sel_data
+    
+    @property
     def selected_rows(self):
         return self.selected
     
     @property
-    def column_state(self):
+    def selected_items(self):
         return self.state
 
 
@@ -146,7 +157,8 @@ def generate_response(component_value: Any,
         
     return GridReturn(
         frame,
-        component_value["selectedItems"],
-        component_value["colState"]
+        component_value["selectedData"],
+        component_value["selectedRows"],
+        component_value["selectedItems"]
     )   
     
