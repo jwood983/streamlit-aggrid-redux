@@ -1,0 +1,9 @@
+# owner of the code owner file
+/.github/CODEOWNERS @jwood983
+
+
+# owner of everything in streamlit_aggrid_redux folder
+/streamlit_aggrid_redux/* @jwood983
+/examples/* @jwood983
+/test/* @jwood983
+/* @jwood983

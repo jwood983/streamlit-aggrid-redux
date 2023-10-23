@@ -1,7 +1,10 @@
 import setuptools
 
-with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+
+def get_long_description():
+    with open("README.md", "r", encoding="utf-8") as fh:
+        long_description = fh.read()
+
 
 # FIXME: add versioning form version.py file
 
@@ -11,7 +14,7 @@ setuptools.setup(
     author="JD Wood",
     author_email="j.d.wood83@gmail.com",
     description="Reimplementation of ag-grid component for streamlit",
-    long_description=long_description,
+    long_description=get_long_description(),
     long_description_content_type="text/markdown",
     url="https://github.com/jwood983/streamlit-aggrid-redux",
     packages=setuptools.find_packages(),
