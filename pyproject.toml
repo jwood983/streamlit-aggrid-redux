@@ -1,21 +1,27 @@
 [tool.poetry]
 name = "streamlit-aggrid-redux"
-version = "0.1.0"
-description = "Another Streamlit component implementation of ag-grid"
-classifiers = ["Programming Language :: Python :: 3", "License :: OSI Approved :: MIT License", "Operating System :: OS Independent"]
+version = "2023.10"
+description = "Reimplementation of ag-grid component for streamlit"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
 homepage = "https://github.com/jwood983/streamlit-aggrid-redux"
-authors = ["JD Wood <j.d.wood83@gmail.com>"]
+authors = [
+    "JD Wood <j.d.wood83@gmail.com>"
+]
 readme = "README.md"
 exclude = ["**/node_modules/**/*", "**/frontend/src/**/*", "**/.yarn/**/*"]
 include = ["**/frontend/build/**/*"]
 packages = [{include="streamlit_aggrid_redux"}]
 
 [tool.poetry.dependencies]
-python = ">=3.8"
-streamlit = ">=0.87.0"
+python = ">=3.10"
+streamlit = ">=1.27"
 pandas = ">=1.2"
 pyarrow = ">=11.0"
-python-decouple = "^3.6"
+python-decouple = "^3.8"
 
 [tool.poetry.dev-dependencies]
 black = "*"
