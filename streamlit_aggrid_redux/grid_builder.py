@@ -63,7 +63,7 @@ def _process_theme(theme: str) -> str:
     """ Ensure the theme is correct. """
     theme_opts = ("alpine", "balham", "material", "streamlit", "excel", "astro",
                   "alpine-dark", "balham-dark", "streamlit-dark", "astro-dark")
-    if theme.split not in theme_opts:
+    if theme not in theme_opts:
         raise GridBuilderError(_make_error_msg("Theme", theme, theme_opts))
     return theme
 
@@ -83,7 +83,7 @@ def _process_excel_export_mode(mode: str) -> str:
 
 
 def _process_conversion_errors(convert: bool, errors: str) -> str:
-    if convert and errors not in ("raise", "coerce"):
+    if convert and errors not in ("raise", "ignore"):
         raise GridBuilderError(
             f"Error handling '{errors}' is invalid, should be 'raise' or 'ignore'"
         )
