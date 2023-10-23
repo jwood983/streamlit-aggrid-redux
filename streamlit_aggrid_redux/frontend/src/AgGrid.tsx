@@ -379,7 +379,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         }
 
         // maybe clear the selected rows
-        if (this.gridOptions.clearCheckboxOnReload) {
+        if (this.props.args.grid_options["clearCheckboxOnReload"]) {
             this.clearSelectedRows()
         }
     }
@@ -405,14 +405,16 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
 
     private processPreselection() {
         var preSelectAllRows = this.props.args.grid_options["preSelectAllRows"] || false
+        // do we want to pre-select all rows?
         if (preSelectAllRows) {
             this.api.selectAll()
             this.returnGridValue()
         }
         else {
-            if (this.gridOptions["preSelectedRows"] || this.gridOptions["preSelectedRows"]?.length() > 0) {
-                for (var idx in this.gridOptions["preSelectedRows"]) {
-                    this.api.getRowNode(this.gridOptions["preSelectedRows"][idx])?.setSelected(true, false, 'selectableChanged')
+            // check on pre-selected rows
+            if (this.props.args.grid_options["preSelectedRows"] || this.props.args.grid_options["preSelectedRows"]?.length() > 0) {
+                for (var idx in this.props.args.grid_options["preSelectedRows"]) {
+                    this.api.getRowNode(this.props.args.grid_options["preSelectedRows"][idx])?.setSelected(true, false, 'selectableChanged')
                     this.returnGridValue()
                 }
             }

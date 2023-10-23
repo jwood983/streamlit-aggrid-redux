@@ -326,7 +326,7 @@ class GridOptionsBuilder:
             )
 
         # now maybe add pre-selected rows
-        if len(pre_selected_rows) > 0:
+        if pre_selected_rows is not None and len(pre_selected_rows) > 0:
             self.grid_options.update(**{"preSelectedRows": pre_selected_rows})
 
         # add remaining options directly--note the case sensitivity of the arguments!

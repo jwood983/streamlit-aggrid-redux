@@ -62,7 +62,7 @@ class GridReturn:
     
     def __str__(self):
         """ Display the simple facts about the data """
-        return f"GridReturn(data={self.data_}, selected_rows={self.selected}, columns_state={self.state})"
+        return f"GridReturn(data={self.data_}, selected_data={self.sel_data}, selected_rows={self.sel_row}, selected_items={self.sel_items})"
     
     def __getitem__(self, key: str):
         if key.lower() == "data":
