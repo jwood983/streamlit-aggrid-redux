@@ -215,14 +215,17 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         const updateEvents = this.props.args.update_on
         const doReturn = (e: any) => this.returnGridValue()
         
-        updateEvents.forEach((element: any) => {
-            if (Array.isArray(element)) {
-                api.addEventListener(element[0], debounce(doReturn, element[1]))
-            }
-            else {
-                api.addEventListener(element, doReturn)
-            }
-        })
+        // ensure that updateEvents exists before trying!
+        if (updateEvents) {
+            updateEvents.forEach((element: any) => {
+                if (Array.isArray(element)) {
+                    api.addEventListener(element[0], debounce(doReturn, element[1]))
+                }
+                else {
+                    api.addEventListener(element, doReturn)
+                }
+            })
+        }
     }
 
     private downloadAsExcelIfRequested() {
