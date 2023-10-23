@@ -13,6 +13,8 @@ python -m pip install streamlit-aggrid-redux
 
 Versioning of this module follows YYYY.MM format, so if you want to install particular versions, you would add the `==YYYY.MM` suffix for the particular version.
 
+I have tested this only on 3.10 an d 3.11 versions of Python, so using an older version may not work.
+
 ## From source
 This is only recommended if you want to aid in developing this package. Download the repository in whatever means you want (e.g., using the Download > Zip or via `git clone ...`). Make your edits and then, to test your changes, you need to build the JS code using npm. This is done by navidating to the frontend folder in terminal/command prompt an running `npm run build`.
 
