@@ -11,7 +11,7 @@ from .errors import GridOptionsBuilderError
 
 def _pandas_types(d: str) -> Dict:
     """ Convert the column type to a list of AgGrid types. """
-    if d in ("i", "u", "f"):
+    if d in ("i", "u", "f") or any(y in str(d) for y in ("int", "float", "double")):
         # a numeric column (integer or float)
         return dict(type="numericColumn", filter="numberColumnFilter")
     elif d == "m":
@@ -85,7 +85,7 @@ class GridOptionsBuilder:
         for name, dtype in zip(frame.columns, frame.dtypes):
             if "." in name:
                 opt.grid_options.update(**{"suppressFieldDotNotation": True})
-            opt.add_column(name, name, **_pandas_types(dtype))
+            opt.add_column(name, name, **_pandas_types(str(dtype)))
        
         return opt
 

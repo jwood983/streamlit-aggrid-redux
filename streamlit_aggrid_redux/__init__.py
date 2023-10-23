@@ -11,13 +11,13 @@ from decouple import config
 from streamlit.components.v1.components import MarshallComponentException
 
 # local imports
-from .code import JsCode
-from .types import DataElement
-from .errors import GridBuilderError, GridOptionsBuilderError
-from .version import version, __version__
-from .grid_return import GridReturn, generate_response
-from .grid_builder import GridBuilder
-from .grid_options_builder import GridOptionsBuilder
+from streamlit_aggrid_redux.code import JsCode
+from streamlit_aggrid_redux.types import DataElement
+from streamlit_aggrid_redux.errors import GridBuilderError, GridOptionsBuilderError
+from streamlit_aggrid_redux.version import version, __version__
+from streamlit_aggrid_redux.grid_return import GridReturn, generate_response
+from streamlit_aggrid_redux.grid_builder import GridBuilder
+from streamlit_aggrid_redux.grid_options_builder import GridOptionsBuilder
 
 # ensure these imports can be used in Python code importing this module
 __all__ = [
@@ -31,10 +31,10 @@ __all__ = [
 ]
 
 
-_RELEASE = config("AGGRID_RELEASE", default=True, cast=bool)
-_PORT = config("PORT", default=3001, cast=int)
+_IS_RELEASE = config("MODE", default="RELEASE", cast=str).upper() == "RELEASE"
 
-if not _RELEASE:
+if not _IS_RELEASE:
+    _PORT = config("PORT", default=3001, cast=int)
     warnings.warn("WARNING: streamlit-aggrid-redux is in development mode.")
     _component_func = components.declare_component("agGridRedux", url=f"http://localhost:{_PORT}")
 else:
@@ -192,7 +192,7 @@ def ag_grid(data: DataElement,
             custom_css,
             update_on,
             enable_quick_search,
-            excel_export_mode
+            excel_export_mode,
             **kwargs
         )
     except (GridBuilderError, GridOptionsBuilderError, Exception) as err:
@@ -200,14 +200,14 @@ def ag_grid(data: DataElement,
         raise GridBuilderError(err)
 
     # if not in release mode, we hide a parameter "return_grid" that returns the grid
-    if not _RELEASE and "return_mode" in kwargs and kwargs["return_mode"]:
+    if not _IS_RELEASE and "return_mode" in kwargs and kwargs["return_mode"]:
         return grid
 
     # now call the component
     try:
         component_value = _component_func(
             grid_options=grid.grid_options,
-            row_data=grid.data,
+            row_data=json.dumps(grid.data),
             height=grid.height,
             columns_auto_size_mode=grid.columns_auto_size_mode,
             return_mode=grid.return_mode,

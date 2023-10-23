@@ -1,12 +1,13 @@
 import { Streamlit, ComponentProps, withStreamlitConnection, } from "streamlit-component-lib"
 
 import React, { ReactNode } from "react"
-import { AgGridReact } from "@ag-grid-community/react"
 
+import { AgGridReact } from "@ag-grid-community/react"
 import { CsvExportModule } from "@ag-grid-community/csv-export"
 import { ClientSideRowModelModule } from "@ag-grid-community/client-side-row-model"
 import { ModuleRegistry, ColumnApi, GridApi, DetailGridInfo } from "@ag-grid-community/core"
 
+// need to move all of these enterprise modules to another package
 import { MenuModule } from "@ag-grid-enterprise/menu"
 import { LicenseManager } from "@ag-grid-enterprise/core"
 import { SideBarModule } from "@ag-grid-enterprise/side-bar"
@@ -24,23 +25,22 @@ import { RangeSelectionModule } from "@ag-grid-enterprise/range-selection"
 import { ColumnsToolPanelModule } from "@ag-grid-enterprise/column-tool-panel"
 import { FiltersToolPanelModule } from "@ag-grid-enterprise/filter-tool-panel"
 
-import { duration } from "moment"
-import { format } from "date-fns-tz"
 import { debounce, throttle } from "lodash"
-import { parseISO, compareAsc } from "date-fns"
 
+// local imports
 import deepMap from "./utils"
 
 //import "./agGridStyle.scss"
-import "@ag-grid-community/styles/ag-grid.css";
-import "@ag-grid-community/styles/ag-theme-alpine.css";
-import "@ag-grid-community/styles/ag-theme-balham.css";
-import "@ag-grid-community/styles/ag-theme-material.css";
+import "@ag-grid-community/styles/ag-grid.min.css";
+import "@ag-grid-community/styles/ag-theme-alpine.min.css";
+import "@ag-grid-community/styles/ag-theme-balham.min.css";
+import "@ag-grid-community/styles/ag-theme-material.min.css";
 import "./ag-theme-excel.min.css"
 import "./ag-theme-streamlit.min.css"
 
 import "@astrouxds/ag-grid-theme/dist/main.css";
 import "@fontsource/source-sans-pro";
+
 
 type CSSDict = { [key: string]: { [key: string]: string } }
 
@@ -66,72 +66,6 @@ function addCustomCss(customCss: CSSDict): void {
     document.head.appendChild(styleSheet)
 }
 
-function dateFormatter(isoString: string, formatterString: string): String {
-    try {
-        let date = parseISO(isoString)
-        return format(date, formatterString)
-    }
-    catch {
-        return isoString
-    }
-    finally {
-      // does nothing on purpose
-    }
-}
-
-function currencyFormatter(number: any, currencySymbol: string): String {
-    let n = Number.parseFloat(number)
-    if (!Number.isNaN(n)) {
-        return currencySymbol + n.toFixed(2)
-    }
-    else {
-        return number
-    }
-}
-
-function numberFormatter(number: any, precision: number): String {
-    let n = Number.parseFloat(number)
-    if (!Number.isNaN(n)) {
-        return n.toFixed(precision)
-    }
-    else {
-        return number
-    }
-}
-
-const columnFormatters = {
-    columnTypes: {
-        dateColumnFilter: {
-            filter: "agDateColumnFilter",
-            filterParams: {
-                comparator: (filterValue: any, cellValue: string) => 
-                    compareAsc(parseISO(cellValue), filterValue),
-            },
-        },
-        numberColumnFilter: {
-            filter: "agNumberColumnFilter",
-        },
-        shortDateTimeFormat: {
-            valueFormatter: (params: any) =>
-                dateFormatter(params.value, "dd/MM/yyyy HH:mm"),
-        },
-        customDateTimeFormat: {
-            valueFormatter: (params: any) =>
-                dateFormatter(params.value, params.column.colDef.custom_format_string),
-        },
-        customNumericFormat: {
-            valueFormatter: (params: any) =>
-                numberFormatter(params.value, params.column.colDef.precision ?? 2),
-        },
-        customCurrencyFormat: {
-            valueFormatter: (params: any) =>
-                currencyFormatter(params.value, params.column.colDef.custom_currency_symbol),
-        },
-        timedeltaFormat: {
-            valueFormatter: (params: any) => duration(params.value).humanize(true),
-        },
-    },
-}
 
 function parseJsCodeFromPython(v: string) {
     const JS_PLACEHOLDER = "--x_x--0_0--"
@@ -227,6 +161,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         }
 
         if (props.args.enable_enterprise_modules) {
+            // need to lazy load these modules...
             ModuleRegistry.registerModules([
                 ExcelExportModule,
                 GridChartsModule,
@@ -260,9 +195,12 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     }
 
     private parseGridOptions() {
+        let formatter = () => {
+            import("./formatters").then(({ columnFormatters }) => { return columnFormatters; })
+        }
         let gridOptions = Object.assign(
             {},
-            columnFormatters,
+            formatter,
             this.props.args.grid_options
         )
         
@@ -277,14 +215,17 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         const updateEvents = this.props.args.update_on
         const doReturn = (e: any) => this.returnGridValue()
         
-        updateEvents.forEach((element: any) => {
-            if (Array.isArray(element)) {
-                api.addEventListener(element[0], debounce(doReturn, element[1]))
-            }
-            else {
-                api.addEventListener(element, doReturn)
-            }
-        })
+        // ensure that updateEvents exists before trying!
+        if (updateEvents) {
+            updateEvents.forEach((element: any) => {
+                if (Array.isArray(element)) {
+                    api.addEventListener(element[0], debounce(doReturn, element[1]))
+                }
+                else {
+                    api.addEventListener(element, doReturn)
+                }
+            })
+        }
     }
 
     private downloadAsExcelIfRequested() {
@@ -341,12 +282,12 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         switch (returnMode) {
             case 0:
                 // ALL_DATA
-                this.api.forEachLeafNode((row) => returnData.push(row.data))
+                this.api.forEachLeafNode((row: { data: any }) => returnData.push(row.data))
                 break
             
             case 1:
                 // FILTERED_DATA
-                this.api.forEachNodeAfterFilter((row) => {
+                this.api.forEachNodeAfterFilter((row: { group: any; data: any }) => {
                     if (!row.group) {
                         returnData.push(row.data)
                     }
@@ -355,7 +296,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             
             case 2:
                 // FILTERED_SORTED_DATA
-                this.api.forEachNodeAfterFilterAndSort((row) => {
+                this.api.forEachNodeAfterFilterAndSort((row: { group: any; data: any }) => {
                     if (!row.group) {
                         returnData.push(row.data)
                     }
@@ -366,7 +307,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         let selected: any = {}
         this.api.forEachDetailGridInfo((d: DetailGridInfo) => {
             selected[d.id] = []
-            d.api?.forEachNode((n) => {
+            d.api?.forEachNode((n: { isSelected: () => any }) => {
                 if (n.isSelected()) {
                     selected[d.id].push(n)
                 }
@@ -377,7 +318,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             rowData: returnData,
             selectedData: selected,
             selectedRows: this.api.getSelectedRows(),
-            selectedItems: this.api.getSelectedNodes().map((n, i) => ({
+            selectedItems: this.api.getSelectedNodes().map((n: { rowIndex: any; id: any; data: any }, i: any) => ({
                 _selectedRowNodeInfo: { nodeRowIndex: n.rowIndex, nodeId: n.id },
                 ...n.data,
             }))
@@ -512,8 +453,8 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                     />
                 </GridToolBar>
                 <AgGridReact
-                    onGridReady={(e) => this.onGridReady(e)}
-                    onGridSizeChanged={(e) => this.onGridSizeChanged(e)}
+                    onGridReady={(e: any) => this.onGridReady(e)}
+                    onGridSizeChanged={(e: any) => this.onGridSizeChanged(e)}
                     gridOptions={this.gridOptions}
                 ></AgGridReact>
             </div>
