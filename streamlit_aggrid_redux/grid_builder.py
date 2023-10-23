@@ -185,6 +185,14 @@ class GridBuilder:
             raise GridBuilderError(
                 f"Unknown type for grid options: '{type(grid_options)}'"
             )
+        
+        # if the height is none, flag the domLayout as autoHeight
+        if obj.height is None:
+            obj.grid_options.update(
+                **dict(
+                    domLayout="autoHeight"
+                )
+            )
 
         # now update with the embedded JS code
         walk_grid_options(
