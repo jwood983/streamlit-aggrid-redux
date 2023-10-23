@@ -1,6 +1,6 @@
 import { Streamlit, ComponentProps, withStreamlitConnection, } from "streamlit-component-lib"
 
-import React, { ReactNode, lazy } from "react"
+import React, { ReactNode } from "react"
 
 import { AgGridReact } from "@ag-grid-community/react"
 import { CsvExportModule } from "@ag-grid-community/csv-export"
@@ -279,12 +279,12 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         switch (returnMode) {
             case 0:
                 // ALL_DATA
-                this.api.forEachLeafNode((row) => returnData.push(row.data))
+                this.api.forEachLeafNode((row: { data: any }) => returnData.push(row.data))
                 break
             
             case 1:
                 // FILTERED_DATA
-                this.api.forEachNodeAfterFilter((row) => {
+                this.api.forEachNodeAfterFilter((row: { group: any; data: any }) => {
                     if (!row.group) {
                         returnData.push(row.data)
                     }
@@ -293,7 +293,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             
             case 2:
                 // FILTERED_SORTED_DATA
-                this.api.forEachNodeAfterFilterAndSort((row) => {
+                this.api.forEachNodeAfterFilterAndSort((row: { group: any; data: any }) => {
                     if (!row.group) {
                         returnData.push(row.data)
                     }
@@ -304,7 +304,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         let selected: any = {}
         this.api.forEachDetailGridInfo((d: DetailGridInfo) => {
             selected[d.id] = []
-            d.api?.forEachNode((n) => {
+            d.api?.forEachNode((n: { isSelected: () => any }) => {
                 if (n.isSelected()) {
                     selected[d.id].push(n)
                 }
@@ -315,7 +315,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             rowData: returnData,
             selectedData: selected,
             selectedRows: this.api.getSelectedRows(),
-            selectedItems: this.api.getSelectedNodes().map((n, i) => ({
+            selectedItems: this.api.getSelectedNodes().map((n: { rowIndex: any; id: any; data: any }, i: any) => ({
                 _selectedRowNodeInfo: { nodeRowIndex: n.rowIndex, nodeId: n.id },
                 ...n.data,
             }))
@@ -450,8 +450,8 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                     />
                 </GridToolBar>
                 <AgGridReact
-                    onGridReady={(e) => this.onGridReady(e)}
-                    onGridSizeChanged={(e) => this.onGridSizeChanged(e)}
+                    onGridReady={(e: any) => this.onGridReady(e)}
+                    onGridSizeChanged={(e: any) => this.onGridSizeChanged(e)}
                     gridOptions={this.gridOptions}
                 ></AgGridReact>
             </div>
