@@ -200,7 +200,7 @@ def ag_grid(data: DataElement,
         raise GridBuilderError(err)
 
     # if not in release mode, we hide a parameter "return_grid" that returns the grid
-    if not _RELEASE and "return_mode" in kwargs and kwargs["return_mode"]:
+    if not _IS_RELEASE and "return_mode" in kwargs and kwargs["return_mode"]:
         return grid
 
     # now call the component
