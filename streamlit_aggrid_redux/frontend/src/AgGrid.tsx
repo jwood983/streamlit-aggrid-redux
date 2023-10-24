@@ -146,6 +146,8 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     private isGridAutoHeightOn: boolean
     private notYetFitColumns: boolean = true
     private renderedGridHeightPrevious: number = 0
+    private preSelectAllRows: boolean = false
+    private clearCheckboxOnReload: boolean = false
 
     constructor(props: any) {
         super(props)
@@ -188,8 +190,18 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             }
         }
 
+        // add some items from input grid options
         this.isGridAutoHeightOn = 
             this.props.args.grid_options?.domLayout === "autoHeight"
+
+        if ("clearCheckboxOnReload" in this.props.args) {
+            this.clearCheckboxOnReload = this.props.args.grid_options["clearCheckboxOnReload"]
+            delete this.props.args.grid_options["clearCheckboxOnReload"]
+        }
+        if ("preSelectAllRows" in this.props.args) {
+            this.preSelectAllRows = this.props.args.grid_options["preSelectAllRows"]
+            delete this.props.args.grid_options["preSelectAllRows"]
+        }
 
         this.parseGridOptions()
     }
@@ -208,6 +220,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             console.warn("Flag allow_unsafe_js is on.")
             gridOptions = deepMap(gridOptions, parseJsCodeFromPython)
         }
+        console.log("Parsing grid options.")
         this.gridOptions = gridOptions
     }
 
@@ -217,6 +230,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         
         // ensure that updateEvents exists before trying!
         if (updateEvents) {
+            console.log("Adding listners in the 'update_on' parameter.")
             updateEvents.forEach((element: any) => {
                 if (Array.isArray(element)) {
                     api.addEventListener(element[0], debounce(doReturn, element[1]))
@@ -236,6 +250,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
 
     private clearSelectedRows() {
         if (this.api) {
+            console.log("Deselecting rows.")
             this.api.deselectAll()
         }
     }
@@ -279,6 +294,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         let returnData: any[] = []
         let returnMode = this.props.args.return_mode
         
+        console.log("Getting the Grid Return Value.")
         switch (returnMode) {
             case 0:
                 // ALL_DATA
@@ -325,7 +341,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             // uncomment the below line for debugging help; otherwise is useless
             //, colState: this.columnApi.getColumnState()
         }
-        // console.dir(returnValue)
+        console.log(returnValue)
         return returnValue
     }
 
@@ -379,7 +395,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         }
 
         // maybe clear the selected rows
-        if (this.props.args.grid_options["clearCheckboxOnReload"]) {
+        if (this.clearCheckboxOnReload) {
             this.clearSelectedRows()
         }
     }
@@ -404,9 +420,8 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     }
 
     private processPreselection() {
-        var preSelectAllRows = this.props.args.grid_options["preSelectAllRows"] || false
         // do we want to pre-select all rows?
-        if (preSelectAllRows) {
+        if (this.preSelectAllRows) {
             this.api.selectAll()
             this.returnGridValue()
         }
@@ -424,7 +439,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     public render = (): ReactNode => {
         let shouldRenderGridToolbar =
             this.props.args.enable_quick_search === true ||
-            this.props.args.manual_update ||
             this.props.args.excel_export_mode === "MANUAL"
     
         return (
@@ -436,7 +450,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             >
                 <GridToolBar enabled={shouldRenderGridToolbar}>
                     <ManualUpdateButton
-                        manualUpdate={this.props.args.manual_update}
+                        manualUpdate={true}
                         onClick={(e: any) => this.returnGridValue()}
                     />
                     <ManualDownloadButton

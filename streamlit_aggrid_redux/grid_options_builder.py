@@ -337,8 +337,7 @@ class GridOptionsBuilder:
                 suppressRowDeselection=suppress_deselection,
                 suppressRowClickSelection=suppress_click_selection,
                 groupSelectsChildren=group_selects_children,
-                groupSelectsFiltered=group_selects_filtered,
-                preSelectAllRows=False
+                groupSelectsFiltered=group_selects_filtered
             )
         )
         return self
