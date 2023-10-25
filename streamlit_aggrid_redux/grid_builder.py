@@ -111,10 +111,11 @@ def _process_update_on(updates: List[str], options: Dict) -> List[str]:
     
     # if selection changed wasn't already set, see if we need to add it
     if "selectionChanged" not in updates:
-        # see if checkboxSelection is set
+        # see if checkboxSelection is set in one of the column defs
         for element in options["columnDefs"]:
             if "checkboxSelection" in element.keys():
                 updates.append("selectionChanged")
+                break
     
     return updates
 
@@ -207,7 +208,7 @@ class GridBuilder:
                     domLayout="autoHeight"
                 )
             )
-            
+
         # if any checkbox is set, ensure that selectionUpdate is added to 'update_on' param
         obj.update_on = _process_update_on(update_on, obj.grid_options)
 
