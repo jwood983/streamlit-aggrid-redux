@@ -53,6 +53,7 @@
     "@types/lodash": "^4.14.200",
     "@types/react": "^18.2.30",
     "@types/react-dom": "^18.2.14",
+    "@types/bootstrap": "^5.2.8",
     "sass": "^1.69.4",
     "moment": "^2.29.4",
     "lodash": "^4.17.21",

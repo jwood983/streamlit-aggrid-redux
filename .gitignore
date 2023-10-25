@@ -4,6 +4,7 @@ streamlit_aggrid_redux/__pycache__/*
 
 # ignore node_modules in frontend
 streamlit_aggrid_redux/frontend/node_modules/*
+streamlit_aggrid_redux/frontend/build/*
 
 # ignore all ~ files
 *~

@@ -124,7 +124,8 @@ def ag_grid(data: DataElement,
 
     reload_data: bool, optional
         A flag indicating whether AgGrid should reload data when
-        refreshing. Default is
+        refreshing on any update (e.g., when selecting a checkbox).
+        Default is False.
 
     column_state: List[Dict], optional
         A set of dictionaries of how the data should be displayed
@@ -230,7 +231,6 @@ def ag_grid(data: DataElement,
             args[0] += ". If using custom JS Code, set allow_unsafe_js to True."
         # re-raise
         raise MarshallComponentException(*args)
-
 
     # now generate the response
     return generate_response(component_value, data, grid.convert_to_original_types, grid.errors)

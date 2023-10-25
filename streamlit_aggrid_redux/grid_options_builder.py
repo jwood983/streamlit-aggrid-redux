@@ -321,12 +321,13 @@ class GridOptionsBuilder:
                     checkboxSelection=True,
                     headerCheckboxSelection=use_header_checkbox,
                     headerCheckboxSelectionFilteredOnly=use_header_checkbox_filtered,
-                    clearCheckboxOnReload=clear_checkbox_on_reload
                 )
             )
+            # push checkbox clearing to main grid options
+            self.grid_options["clearCheckboxOnReload"] = clear_checkbox_on_reload
 
         # now maybe add pre-selected rows
-        if len(pre_selected_rows) > 0:
+        if pre_selected_rows is not None and len(pre_selected_rows) > 0:
             self.grid_options.update(**{"preSelectedRows": pre_selected_rows})
 
         # add remaining options directly--note the case sensitivity of the arguments!
@@ -337,8 +338,7 @@ class GridOptionsBuilder:
                 suppressRowDeselection=suppress_deselection,
                 suppressRowClickSelection=suppress_click_selection,
                 groupSelectsChildren=group_selects_children,
-                groupSelectsFiltered=group_selects_filtered,
-                preSelectAllRows=False
+                groupSelectsFiltered=group_selects_filtered
             )
         )
         return self

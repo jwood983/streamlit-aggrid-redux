@@ -116,17 +116,6 @@ function QuickSearch(props: any) {
     return <></>
 }
 
-function ManualUpdateButton(props: any) {
-    if (props.manualUpdate) {
-        return (
-            <button onClick={props.onClick} style={{ marginLeft: 5, marginRight: 5 }}>
-                Update
-            </button>
-        )
-    }
-    return <></>
-}
-
 function ManualDownloadButton(props: any) {
     if (props.enabled) {
         return (
@@ -146,6 +135,8 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     private isGridAutoHeightOn: boolean
     private notYetFitColumns: boolean = true
     private renderedGridHeightPrevious: number = 0
+    private preSelectAllRows: boolean = false
+    private clearCheckboxOnReload: boolean = false
 
     constructor(props: any) {
         super(props)
@@ -161,7 +152,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         }
 
         if (props.args.enable_enterprise_modules) {
-            // need to lazy load these modules...
+            // need to find a way to lazy load these modules...
             ModuleRegistry.registerModules([
                 ExcelExportModule,
                 GridChartsModule,
@@ -184,12 +175,21 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                 LicenseManager.setLicenseKey(props.args["license_key"])
             }
             else {
-                     console.log("Enterprise modules requested without license key; using trial version")
+                console.log("Enterprise modules requested without license key; using trial version")
             }
         }
 
-        this.isGridAutoHeightOn = 
-            this.props.args.grid_options?.domLayout === "autoHeight"
+        // add some items from input grid options
+        this.isGridAutoHeightOn = this.props.args.grid_options?.domLayout === "autoHeight"
+
+        if (("clearCheckboxOnReload" in this.props.args.grid_options)) {
+            this.clearCheckboxOnReload = this.props.args.grid_options["clearCheckboxOnReload"];
+            delete this.props.args.grid_options["clearCheckboxOnReload"];
+        }
+        if (("preSelectAllRows" in this.props.args.grid_options)) {
+            this.preSelectAllRows = this.props.args.grid_options["preSelectAllRows"];
+            delete this.props.args.grid_options["preSelectAllRows"];
+        }
 
         this.parseGridOptions()
     }
@@ -304,33 +304,21 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                 break
         }
         
-        let selected: any = {}
-        this.api.forEachDetailGridInfo((d: DetailGridInfo) => {
-            selected[d.id] = []
-            d.api?.forEachNode((n: { isSelected: () => any }) => {
-                if (n.isSelected()) {
-                    selected[d.id].push(n)
-                }
-            })
-        })
-        
         let returnValue = {
             rowData: returnData,
-            selectedData: selected,
             selectedRows: this.api.getSelectedRows(),
             selectedItems: this.api.getSelectedNodes().map((n: { rowIndex: any; id: any; data: any }, i: any) => ({
                 _selectedRowNodeInfo: { nodeRowIndex: n.rowIndex, nodeId: n.id },
                 ...n.data,
-            }))
+            })),
             // uncomment the below line for debugging help; otherwise is useless
             //, colState: this.columnApi.getColumnState()
         }
-        // console.dir(returnValue)
         return returnValue
     }
 
     private returnGridValue() {
-        this.getGridReturnValue().then((v) => Streamlit.setComponentValue(v))
+        this.getGridReturnValue().then((v: any) => Streamlit.setComponentValue(v))
     }
 
     private defineContainerHeight() {
@@ -367,6 +355,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             this.downloadAsExcelIfRequested()
         }
         
+        // this forces a reload of the whole grid at each step
         if (this.props.args.reload_data && this.api) {
             this.api.setRowData(JSON.parse(this.props.args.row_data))
             // pinned top & bottom rows are passed in not via row data but as a grid option
@@ -379,7 +368,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         }
 
         // maybe clear the selected rows
-        if (this.gridOptions.clearCheckboxOnReload) {
+        if (this.clearCheckboxOnReload) {
             this.clearSelectedRows()
         }
     }
@@ -404,15 +393,16 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     }
 
     private processPreselection() {
-        var preSelectAllRows = this.props.args.grid_options["preSelectAllRows"] || false
-        if (preSelectAllRows) {
+        // do we want to pre-select all rows?
+        if (this.preSelectAllRows) {
             this.api.selectAll()
             this.returnGridValue()
         }
         else {
-            if (this.gridOptions["preSelectedRows"] || this.gridOptions["preSelectedRows"]?.length() > 0) {
-                for (var idx in this.gridOptions["preSelectedRows"]) {
-                    this.api.getRowNode(this.gridOptions["preSelectedRows"][idx])?.setSelected(true, false, 'selectableChanged')
+            // check on pre-selected rows
+            if (this.props.args.grid_options["preSelectedRows"] || this.props.args.grid_options["preSelectedRows"]?.length() > 0) {
+                for (var idx in this.props.args.grid_options["preSelectedRows"]) {
+                    this.api.getRowNode(this.props.args.grid_options["preSelectedRows"][idx])?.setSelected(true, false, 'selectableChanged')
                     this.returnGridValue()
                 }
             }
@@ -422,7 +412,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
     public render = (): ReactNode => {
         let shouldRenderGridToolbar =
             this.props.args.enable_quick_search === true ||
-            this.props.args.manual_update ||
             this.props.args.excel_export_mode === "MANUAL"
     
         return (
@@ -433,10 +422,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                 style={this.defineContainerHeight()}
             >
                 <GridToolBar enabled={shouldRenderGridToolbar}>
-                    <ManualUpdateButton
-                        manualUpdate={this.props.args.manual_update}
-                        onClick={(e: any) => this.returnGridValue()}
-                    />
                     <ManualDownloadButton
                         enabled={this.props.args.excel_export_mode === "MANUAL"}
                         onClick={(e: any) => this.api?.exportDataAsExcel()}

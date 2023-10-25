@@ -13,13 +13,13 @@ from .types import DataElement
 class GridReturn:
     """A data-only class that yields the output of the AgGrid component. """
     data_: DataElement = None
-    selected: List[Dict] = None
-    state: List[Dict] = None
+    rows: List[Dict] = None
+    items: List[Dict] = None
 
     def __new__(cls,
                 data: DataElement,
                 selected_rows: List[Dict] = None,
-                column_state: List[Dict] = None):
+                selected_items: List[Dict] = None):
         """The set of data returned from the AgGrid Component,
         which contains either the original data or the modified
         data from AgGrid.
@@ -27,20 +27,22 @@ class GridReturn:
         Parameters
         ----------
         data: {np.ndarray, pd.DataFrame, pa.Table, dict, str}
-            The data to return to users. If the data was reduced
-            in some way in the grid (e.g., filtering, sorting),
-            then it is the reduced data instead.
-
+            This contains the data that is display on the screen,
+            whether it is the original data or it is filtered or
+            sorted.
+            
             The returned data is always in the original data format.
         
         selected_rows: list of dicts, optional
-            If the user selected rows in the displayed grid, these
-            rows are returned to the user. When nothing is selected,
-            this is None.
+            When checkboxes are enabled, this parameter will hold the
+            list of records that represent the completed rows. This
+            can be coerced into a pandas DataFrame using `from_records`.
+            When checkboxes are disabled, this is None.
         
-        column_state: list of dicts, optional
-            Another output of the AgGrid component. Likely not needed
-            in Python development.
+        selected_items: list of dicts, optional
+            When checkboxes are enabled, this parameter will hold the
+            detailed information about the groups and rows selected by
+            the checkboxes. When no items are selected, this is None.
         
         Returns
         -------
@@ -49,35 +51,39 @@ class GridReturn:
         """
         obj = super().__new__(cls)
         obj.data_ = data
-        obj.selected = selected_rows
-        obj.state = column_state
+        obj.rows = selected_rows
+        obj.items = selected_items
         return obj
     
     def __str__(self):
         """ Display the simple facts about the data """
-        return f"GridReturn(data={self.data_}, selected_rows={self.selected}, columns_state={self.state})"
+        return f"GridReturn(data={self.data_}, selected_rows={self.rows}, selected_items={self.items})"
     
     def __getitem__(self, key: str):
-        if key.lower() == "data":
+        low_key = key.lower()
+        if low_key == "data":
             return self.data_
-        elif key.lower().startswith("select"):
-            return self.selected
-        elif key.lower().startswith("column"):
-            return self.state
+        elif low_key.endswith("rows"):
+            return self.rows
+        elif low_key.endswith("items"):
+            return self.items
         else:
             raise KeyError(f"Key '{key}' is invalid")
     
     @property
     def data(self):
+        """ The data that is displayed on screen from AgGrid. """
         return self.data_
     
     @property
     def selected_rows(self):
-        return self.selected
+        """ Return the selected rows from AgGrid. """
+        return self.rows
     
     @property
-    def column_state(self):
-        return self.state
+    def selected_items(self):
+        """ Return the selected items from AgGrid. """
+        return self.items
 
 
 def generate_response(component_value: Any,
@@ -146,7 +152,7 @@ def generate_response(component_value: Any,
         
     return GridReturn(
         frame,
-        component_value["selectedItems"],
-        component_value["colState"]
+        component_value["selectedRows"],
+        component_value["selectedItems"]
     )   
     
