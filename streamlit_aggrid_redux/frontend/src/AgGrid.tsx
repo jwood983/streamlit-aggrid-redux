@@ -219,7 +219,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             console.warn("Flag allow_unsafe_js is on.")
             gridOptions = deepMap(gridOptions, parseJsCodeFromPython)
         }
-        console.log("Parsing grid options.")
         this.gridOptions = gridOptions
     }
 
@@ -229,7 +228,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         
         // ensure that updateEvents exists before trying!
         if (updateEvents) {
-            console.log("Adding listners in the 'update_on' parameter.")
             updateEvents.forEach((element: any) => {
                 if (Array.isArray(element)) {
                     api.addEventListener(element[0], debounce(doReturn, element[1]))
@@ -249,7 +247,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
 
     private clearSelectedRows() {
         if (this.api) {
-            console.log("Deselecting rows.")
             this.api.deselectAll()
         }
     }
@@ -293,7 +290,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         let returnData: any[] = []
         let returnMode = this.props.args.return_mode
         
-        console.log("Getting the Grid Return Value.")
         switch (returnMode) {
             case 0:
                 // ALL_DATA
@@ -319,19 +315,8 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                 break
         }
         
-        let selected: any = {}
-        this.api.forEachDetailGridInfo((d: DetailGridInfo) => {
-            selected[d.id] = []
-            d.api?.forEachNode((n: { isSelected: () => any }) => {
-                if (n.isSelected()) {
-                    selected[d.id].push(n)
-                }
-            })
-        })
-        
         let returnValue = {
             rowData: returnData,
-            selectedData: selected,
             selectedRows: this.api.getSelectedRows(),
             selectedItems: this.api.getSelectedNodes().map((n: { rowIndex: any; id: any; data: any }, i: any) => ({
                 _selectedRowNodeInfo: { nodeRowIndex: n.rowIndex, nodeId: n.id },
@@ -340,12 +325,11 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             // uncomment the below line for debugging help; otherwise is useless
             //, colState: this.columnApi.getColumnState()
         }
-        console.log(returnValue)
         return returnValue
     }
 
     private returnGridValue() {
-        this.getGridReturnValue().then((v) => Streamlit.setComponentValue(v))
+        this.getGridReturnValue().then((v: any) => Streamlit.setComponentValue(v))
     }
 
     private defineContainerHeight() {

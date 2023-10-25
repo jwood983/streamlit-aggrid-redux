@@ -13,13 +13,11 @@ from .types import DataElement
 class GridReturn:
     """A data-only class that yields the output of the AgGrid component. """
     data_: DataElement = None
-    sel_data: List[Dict] = None
-    sel_row: List[Dict] = None
-    sel_items: List[Dict] = None
+    rows: List[Dict] = None
+    items: List[Dict] = None
 
     def __new__(cls,
                 data: DataElement,
-                selected_data: List[Dict] = None,
                 selected_rows: List[Dict] = None,
                 selected_items: List[Dict] = None):
         """The set of data returned from the AgGrid Component,
@@ -34,10 +32,6 @@ class GridReturn:
             then it is the reduced data instead.
 
             The returned data is always in the original data format.
-        
-        selected_data: list of dicts, optional
-            A list of elements that are selected. When nothing is
-            selected, this is None.
         
         selected_rows: list of dicts, optional
             If the user selected rows in the displayed grid, these
@@ -55,22 +49,21 @@ class GridReturn:
         """
         obj = super().__new__(cls)
         obj.data_ = data
-        obj.sel_data = selected_data
-        obj.sel_row = selected_rows
-        obj.sel_items = selected_items
+        obj.rows = selected_rows
+        obj.items = selected_items
         return obj
     
     def __str__(self):
         """ Display the simple facts about the data """
-        return f"GridReturn(data={self.data_}, selected_data={self.sel_data}, selected_rows={self.sel_row}, selected_items={self.sel_items})"
+        return f"GridReturn(data={self.data_}, selected_rows={self.rows}, selected_items={self.items})"
     
     def __getitem__(self, key: str):
         if key.lower() == "data":
             return self.data_
         elif key.lower().startswith("select"):
-            return self.selected
-        elif key.lower().startswith("column"):
-            return self.state
+            return self.rows
+        elif key.lower().startswith("items"):
+            return self.items
         else:
             raise KeyError(f"Key '{key}' is invalid")
     
@@ -79,16 +72,12 @@ class GridReturn:
         return self.data_
     
     @property
-    def selected_data(self):
-        return self.sel_data
-    
-    @property
     def selected_rows(self):
-        return self.selected
+        return self.rows
     
     @property
     def selected_items(self):
-        return self.state
+        return self.items
 
 
 def generate_response(component_value: Any,
@@ -157,7 +146,6 @@ def generate_response(component_value: Any,
         
     return GridReturn(
         frame,
-        component_value["selectedData"],
         component_value["selectedRows"],
         component_value["selectedItems"]
     )   

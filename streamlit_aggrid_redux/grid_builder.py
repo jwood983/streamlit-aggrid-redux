@@ -102,6 +102,21 @@ def _process_css(custom_css: Union[Dict, str]) -> Dict:
         raise GridBuilderError(
             f"Custom CSS is neither a dict nor a string by {type(custom_css)}"
         )
+    
+def _process_update_on(updates: List[str], options: Dict) -> List[str]:
+    """ Ensure that updates include columnVisible and if we have checkboxes visible. """
+    # ensure at least columns being visible kicks back the data
+    if updates is None:
+        updates = ["columnVisible"]
+    
+    # if selection changed wasn't already set, see if we need to add it
+    if "selectionChanged" not in updates:
+        # see if checkboxSelection is set
+        for element in options["columnDefs"]:
+            if "checkboxSelection" in element.keys():
+                updates.append("selectionChanged")
+    
+    return updates
 
 
 ######################################################################
@@ -165,7 +180,6 @@ class GridBuilder:
         obj.convert_to_original_types = convert_to_original_types
         obj.reload_data = reload_data
         obj.column_state = column_state
-        obj.update_on = update_on or ["columnVisible"]
         obj.enable_quick_search = enable_quick_search
 
         # handle the grid options now
@@ -193,14 +207,9 @@ class GridBuilder:
                     domLayout="autoHeight"
                 )
             )
-        # if any checkbox is set, ensure that selectionUpdate is added to 'update_on' param
-        if "checkboxSelection" in obj.grid_options.keys():
-            if isinstance(obj.update_on, (list, tuple)):
-                if "selectionChanged" not in obj.update_on:
-                    obj.update_on.append("selectionChanged")
-            else:
-                obj.update_on = ["selectionChanged"]
             
+        # if any checkbox is set, ensure that selectionUpdate is added to 'update_on' param
+        obj.update_on = _process_update_on(update_on, obj.grid_options)
 
         # now update with the embedded JS code
         walk_grid_options(
