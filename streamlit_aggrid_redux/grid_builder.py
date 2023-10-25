@@ -165,7 +165,7 @@ class GridBuilder:
         obj.convert_to_original_types = convert_to_original_types
         obj.reload_data = reload_data
         obj.column_state = column_state
-        obj.update_on = update_on
+        obj.update_on = update_on or ["columnVisible"]
         obj.enable_quick_search = enable_quick_search
 
         # handle the grid options now
@@ -193,6 +193,14 @@ class GridBuilder:
                     domLayout="autoHeight"
                 )
             )
+        # if any checkbox is set, ensure that selectionUpdate is added to 'update_on' param
+        if "checkboxSelection" in obj.grid_options.keys():
+            if isinstance(obj.update_on, (list, tuple)):
+                if "selectionChanged" not in obj.update_on:
+                    obj.update_on.append("selectionChanged")
+            else:
+                obj.update_on = ["selectionChanged"]
+            
 
         # now update with the embedded JS code
         walk_grid_options(

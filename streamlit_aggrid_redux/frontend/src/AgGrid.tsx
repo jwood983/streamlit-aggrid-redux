@@ -163,7 +163,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
         }
 
         if (props.args.enable_enterprise_modules) {
-            // need to lazy load these modules...
+            // need to find a way to lazy load these modules...
             ModuleRegistry.registerModules([
                 ExcelExportModule,
                 GridChartsModule,
@@ -186,21 +186,20 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                 LicenseManager.setLicenseKey(props.args["license_key"])
             }
             else {
-                     console.log("Enterprise modules requested without license key; using trial version")
+                console.log("Enterprise modules requested without license key; using trial version")
             }
         }
 
         // add some items from input grid options
-        this.isGridAutoHeightOn = 
-            this.props.args.grid_options?.domLayout === "autoHeight"
+        this.isGridAutoHeightOn = this.props.args.grid_options?.domLayout === "autoHeight"
 
-        if ("clearCheckboxOnReload" in this.props.args) {
-            this.clearCheckboxOnReload = this.props.args.grid_options["clearCheckboxOnReload"]
-            delete this.props.args.grid_options["clearCheckboxOnReload"]
+        if (("clearCheckboxOnReload" in this.props.args.grid_options)) {
+            this.clearCheckboxOnReload = this.props.args.grid_options["clearCheckboxOnReload"];
+            delete this.props.args.grid_options["clearCheckboxOnReload"];
         }
-        if ("preSelectAllRows" in this.props.args) {
-            this.preSelectAllRows = this.props.args.grid_options["preSelectAllRows"]
-            delete this.props.args.grid_options["preSelectAllRows"]
+        if (("preSelectAllRows" in this.props.args.grid_options)) {
+            this.preSelectAllRows = this.props.args.grid_options["preSelectAllRows"];
+            delete this.props.args.grid_options["preSelectAllRows"];
         }
 
         this.parseGridOptions()
@@ -337,7 +336,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             selectedItems: this.api.getSelectedNodes().map((n: { rowIndex: any; id: any; data: any }, i: any) => ({
                 _selectedRowNodeInfo: { nodeRowIndex: n.rowIndex, nodeId: n.id },
                 ...n.data,
-            }))
+            })),
             // uncomment the below line for debugging help; otherwise is useless
             //, colState: this.columnApi.getColumnState()
         }

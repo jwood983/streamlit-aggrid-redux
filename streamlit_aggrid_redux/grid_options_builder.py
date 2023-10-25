@@ -321,9 +321,10 @@ class GridOptionsBuilder:
                     checkboxSelection=True,
                     headerCheckboxSelection=use_header_checkbox,
                     headerCheckboxSelectionFilteredOnly=use_header_checkbox_filtered,
-                    clearCheckboxOnReload=clear_checkbox_on_reload
                 )
             )
+            # push checkbox clearing to main grid options
+            self.grid_options["clearCheckboxOnReload"] = clear_checkbox_on_reload
 
         # now maybe add pre-selected rows
         if pre_selected_rows is not None and len(pre_selected_rows) > 0:
