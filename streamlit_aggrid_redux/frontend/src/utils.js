@@ -18,4 +18,4 @@ function deepMap(obj, fn) {
     return obj
 }
 
-export default deepMap
+export default deepMap;
