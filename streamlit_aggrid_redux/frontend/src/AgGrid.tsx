@@ -366,6 +366,7 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
             this.downloadAsExcelIfRequested()
         }
         
+        // this forces a reload of the whole grid at each step
         if (this.props.args.reload_data && this.api) {
             this.api.setRowData(JSON.parse(this.props.args.row_data))
             // pinned top & bottom rows are passed in not via row data but as a grid option

@@ -27,20 +27,22 @@ class GridReturn:
         Parameters
         ----------
         data: {np.ndarray, pd.DataFrame, pa.Table, dict, str}
-            The data to return to users. If the data was reduced
-            in some way in the grid (e.g., filtering, sorting),
-            then it is the reduced data instead.
-
+            This contains the data that is display on the screen,
+            whether it is the original data or it is filtered or
+            sorted.
+            
             The returned data is always in the original data format.
         
         selected_rows: list of dicts, optional
-            If the user selected rows in the displayed grid, these
-            rows are returned to the user. When nothing is selected,
-            this is None.
+            When checkboxes are enabled, this parameter will hold the
+            list of records that represent the completed rows. This
+            can be coerced into a pandas DataFrame using `from_records`.
+            When checkboxes are disabled, this is None.
         
         selected_items: list of dicts, optional
-            The set of selected rows from the AgGrid resonse. When
-            no items are selected, this is None.
+            When checkboxes are enabled, this parameter will hold the
+            detailed information about the groups and rows selected by
+            the checkboxes. When no items are selected, this is None.
         
         Returns
         -------
@@ -58,25 +60,29 @@ class GridReturn:
         return f"GridReturn(data={self.data_}, selected_rows={self.rows}, selected_items={self.items})"
     
     def __getitem__(self, key: str):
-        if key.lower() == "data":
+        low_key = key.lower()
+        if low_key == "data":
             return self.data_
-        elif key.lower().startswith("select"):
+        elif low_key.endswith("rows"):
             return self.rows
-        elif key.lower().startswith("items"):
+        elif low_key.endswith("items"):
             return self.items
         else:
             raise KeyError(f"Key '{key}' is invalid")
     
     @property
     def data(self):
+        """ The data that is displayed on screen from AgGrid. """
         return self.data_
     
     @property
     def selected_rows(self):
+        """ Return the selected rows from AgGrid. """
         return self.rows
     
     @property
     def selected_items(self):
+        """ Return the selected items from AgGrid. """
         return self.items
 
 
