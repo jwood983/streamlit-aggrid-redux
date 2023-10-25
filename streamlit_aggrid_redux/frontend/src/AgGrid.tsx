@@ -116,17 +116,6 @@ function QuickSearch(props: any) {
     return <></>
 }
 
-function ManualUpdateButton(props: any) {
-    if (props.manualUpdate) {
-        return (
-            <button onClick={props.onClick} style={{ marginLeft: 5, marginRight: 5 }}>
-                Update
-            </button>
-        )
-    }
-    return <></>
-}
-
 function ManualDownloadButton(props: any) {
     if (props.enabled) {
         return (
@@ -433,10 +422,6 @@ class AgGrid<S = {}> extends React.Component<ComponentProps, S> {
                 style={this.defineContainerHeight()}
             >
                 <GridToolBar enabled={shouldRenderGridToolbar}>
-                    <ManualUpdateButton
-                        manualUpdate={true}
-                        onClick={(e: any) => this.returnGridValue()}
-                    />
                     <ManualDownloadButton
                         enabled={this.props.args.excel_export_mode === "MANUAL"}
                         onClick={(e: any) => this.api?.exportDataAsExcel()}
