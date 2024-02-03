@@ -6,12 +6,13 @@ import json
 import warnings
 
 # common imports
-from typing import Union, List, Dict, Tuple, Mapping
+from typing import Union, List, Dict, Tuple, Mapping, Literal
 from decouple import config
 from streamlit.components.v1.components import MarshallComponentException
 
 # local imports
 from streamlit_aggrid_redux.code import JsCode
+from streamlit_aggrid_redux.html import default_html
 from streamlit_aggrid_redux.types import DataElement
 from streamlit_aggrid_redux.errors import GridBuilderError, GridOptionsBuilderError
 from streamlit_aggrid_redux.version import version, __version__
@@ -235,3 +236,49 @@ def ag_grid(data: DataElement,
     # now generate the response
     return generate_response(component_value, data, grid.convert_to_original_types, grid.errors)
         
+
+
+def html(data: DataElement,
+         grid_options: Union[Dict, GridOptionsBuilder] = None,
+         enable_enterprise_modules: bool = True,
+         license_key: str = None,
+         theme: Literal['quartz', 'alpine', 'balham', 'material'] = 'quartz',
+         key: str = None) -> str:
+    """ Construct the HTML to inject into the dashboard using components.
+
+    Parameters
+    ----------
+    data: {pd.DataFrame, pa.Table, np.ndarray, str}
+        The data element to display.
+
+    grid_options: {Dict, GridOptionsBuilder}, optional
+        The optional set of parameters to pass to AgGrid
+        that specify how the data is displayed on screen.
+        See https://www.ag-grid.com/javascript-data-grid/grid-options/
+        for details. Default is None to use AgGrid defaults.
+
+        There is the GridOptionsBuilder class to help users
+        fill out the dictionary with required parameters.
+        However, the preferred input type is the data
+        dictionary.
+
+    enable_enterprise_modules: bool, optional
+        A flag indicating whether AgGrid Enterprise Modules
+        should be loaded (True) or not (False). A license key
+        is required to remove the Trial Version watermark; using
+        the enterprise modules without the license should not be
+        for production systems. Default is True.
+
+    license_key: str, optional
+        The AgGrid Enterprise Module license key. Unused if
+        `enable_enterprise_modules=False`. Default is None.
+    
+    theme: {'quartz', 'alpine', 'balham', 'material'}, optional
+        The CSS theme to use for the grid. Default is quartz, 
+        which is the recommended theme for most cases.
+
+    key: str, optional
+        The key to inject into the HTML table. If not input, will use
+        the table size as the key.
+    """
+    raise GridBuilderError("html component is not yet implemented")
