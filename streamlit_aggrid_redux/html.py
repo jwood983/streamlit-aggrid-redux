@@ -32,7 +32,6 @@ let gridApi;
 // inject grid options dictionary here
 const gridOptions = {{
     rowData: [[GRID_ROW_DATA]],
-    colData: [[GRID_COL_DATA]],
     [[GRID_OPTIONS]]
 }};
 

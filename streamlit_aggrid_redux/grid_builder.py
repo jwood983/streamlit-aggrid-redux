@@ -21,7 +21,7 @@ def _make_error_msg(field: str, input: str, options: Iterable[str]):
     return f"Input {field} '{input}' is invalid. Options are {opts}."
 
 
-def _serialize_data(data: DataElement) -> List[Dict]:
+def serialize_data(data: DataElement) -> List[Dict]:
     """ Convert the input data element into a JSON string. """
     try:
         frame = convert_anything_to_df(data, ensure_copy=True, allow_styler=False)
@@ -165,7 +165,7 @@ class GridBuilder:
         obj = super().__new__(cls)
 
         # process data that needs to be cleansed
-        obj.data = _serialize_data(data)
+        obj.data = serialize_data(data)
         obj.columns_auto_size_mode = _process_auto_size_mode(columns_auto_size_mode.lower())
         obj.return_mode = _process_return_mode(return_mode.lower())
         obj.errors = _process_conversion_errors(convert_to_original_types, errors.lower())
@@ -224,3 +224,6 @@ class GridBuilder:
         """ In case we need to process deprecated parameters, handle them here. """
         return self
 
+    def to_js(self) -> str:
+        """ Convert the constructed object into a JS code. """
+        return ""

@@ -17,7 +17,7 @@ from streamlit_aggrid_redux.types import DataElement
 from streamlit_aggrid_redux.errors import GridBuilderError, GridOptionsBuilderError
 from streamlit_aggrid_redux.version import version, __version__
 from streamlit_aggrid_redux.grid_return import GridReturn, generate_response
-from streamlit_aggrid_redux.grid_builder import GridBuilder
+from streamlit_aggrid_redux.grid_builder import GridBuilder, serialize_data
 from streamlit_aggrid_redux.grid_options_builder import GridOptionsBuilder
 
 # ensure these imports can be used in Python code importing this module
@@ -239,10 +239,11 @@ def ag_grid(data: DataElement,
 
 
 def html(data: DataElement,
-         grid_options: Union[Dict, GridOptionsBuilder] = None,
+         grid_options: Union[Dict, GridOptionsBuilder, str] = None,
          enable_enterprise_modules: bool = True,
          license_key: str = None,
-         theme: Literal['quartz', 'alpine', 'balham', 'material'] = 'quartz',
+         theme: Literal['quartz', 'alpine', 'balham', 'material',
+                        'quartz-dark', 'alpine-dark', 'balham-dark'] = 'quartz',
          key: str = None) -> str:
     """ Construct the HTML to inject into the dashboard using components.
 
@@ -251,7 +252,7 @@ def html(data: DataElement,
     data: {pd.DataFrame, pa.Table, np.ndarray, str}
         The data element to display.
 
-    grid_options: {Dict, GridOptionsBuilder}, optional
+    grid_options: {Dict, GridOptionsBuilder, str}, optional
         The optional set of parameters to pass to AgGrid
         that specify how the data is displayed on screen.
         See https://www.ag-grid.com/javascript-data-grid/grid-options/
@@ -273,12 +274,38 @@ def html(data: DataElement,
         The AgGrid Enterprise Module license key. Unused if
         `enable_enterprise_modules=False`. Default is None.
     
-    theme: {'quartz', 'alpine', 'balham', 'material'}, optional
+    theme: {'quartz', 'alpine', 'balham', 'material',
+            'quartz-dark', 'alpine-dark', 'balham-dark'}, optional
         The CSS theme to use for the grid. Default is quartz, 
-        which is the recommended theme for most cases.
+        which is the recommended theme for most cases. See
+        https://www.ag-grid.com/javascript-data-grid/themes/ for
+        more information.
 
     key: str, optional
         The key to inject into the HTML table. If not input, will use
         the table size as the key.
     """
-    raise GridBuilderError("html component is not yet implemented")
+    # convert the data into a serialized version
+    html_data = serialize_data(data)
+
+    if grid_options is None:
+        grid_opts = GridOptionsBuilder.from_data(data).build()
+    elif isinstance(grid_options, GridOptionsBuilder):
+        grid_opts = grid_options.build()
+    elif isinstance(grid_options, str):
+        grid_opts = json.loads(grid_options)
+    else:
+        grid_opts = grid_options
+    
+    # now dump it to string...
+    grid_opt_str = json.dumps(grid_opts)
+
+    html_str = default_html(enable_enterprise_modules)
+    # FIXME: See how to inject the license key this manner
+
+    # start replacing
+    return (html_str.replace("[[AG_GRID_ID]]", key or f"my-ag-table-{len(data)}-{len(html_data[0])}")
+            .replace("[[USER_FUNCTIONS]]", "")
+            .replace("[[GRID_ROW_DATA]]", html_data)
+            .replace("[[GRID_THEME]]", theme)
+            .replace("[[GRID_OPTIONS]]", grid_opt_str))
