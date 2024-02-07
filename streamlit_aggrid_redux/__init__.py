@@ -240,10 +240,13 @@ def ag_grid(data: DataElement,
 
 def html(data: DataElement,
          grid_options: Union[Dict, GridOptionsBuilder, str] = None,
+         grid_functions: List[str] = None,
          enable_enterprise_modules: bool = True,
          license_key: str = None,
          theme: Literal['quartz', 'alpine', 'balham', 'material',
                         'quartz-dark', 'alpine-dark', 'balham-dark'] = 'quartz',
+         theme_overrides: str = None,
+         height: int = None,
          key: str = None) -> str:
     """ Construct the HTML to inject into the dashboard using components.
 
@@ -262,6 +265,11 @@ def html(data: DataElement,
         fill out the dictionary with required parameters.
         However, the preferred input type is the data
         dictionary.
+    
+    grid_functions: list of strings
+        For user-specified functions (e.g., formatting, sorting),
+        these can be input as a list of strings of JS code blocks.
+        User at your own risk.
 
     enable_enterprise_modules: bool, optional
         A flag indicating whether AgGrid Enterprise Modules
@@ -280,6 +288,16 @@ def html(data: DataElement,
         which is the recommended theme for most cases. See
         https://www.ag-grid.com/javascript-data-grid/themes/ for
         more information.
+    
+    theme_overrides: str, optional
+        For overriding specific fields in the CSS definitions (e.g.,
+        font sizes & families) of the AgGrid. Default is None to
+        use the default AgGrid style.
+    
+    height: int, optional
+        For specifying the height, in pixels, the table is to display.
+        By default, uses the minimum of 50 cells and the length of the
+        table.
 
     key: str, optional
         The key to inject into the HTML table. If not input, will use
@@ -301,11 +319,27 @@ def html(data: DataElement,
     grid_opt_str = json.dumps(grid_opts)
 
     html_str = default_html(enable_enterprise_modules)
-    # FIXME: See how to inject the license key this manner
+
+    if height is None:
+        height = 32 * min(len(data), 50) + 25
+
+    if theme_overrides is None:
+        theme_overrides = ""
+    
+    if license_key is None:
+        license_key = ""
+    
+    if grid_functions is not None:
+        grid_functions = "\r\n".join(grid_functions)
+    else:
+        grid_functions = ""
 
     # start replacing
     return (html_str.replace("[[AG_GRID_ID]]", key or f"my-ag-table-{len(data)}-{len(html_data[0])}")
-            .replace("[[USER_FUNCTIONS]]", "")
+            .replace("[[USER_FUNCTIONS]]", grid_functions)
             .replace("[[GRID_ROW_DATA]]", html_data)
             .replace("[[GRID_THEME]]", theme)
+            .replace("[[GRID_THEME_OVERRIDES]]", theme_overrides)
+            .replace("[[HEIGHT]]", height)
+            .replace("[[LICENSE_KEY]]", license_key)
             .replace("[[GRID_OPTIONS]]", grid_opt_str))
